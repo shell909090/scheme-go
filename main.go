@@ -24,6 +24,7 @@ func main() {
 		panic(err)
 	}
 
-	code.Format(os.Stdout)
+	code.Format(os.Stdout, 0)
 	// fmt.Println(code)
+	os.Stdout.Write([]byte("\n"))
 }
