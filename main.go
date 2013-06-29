@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	// "fmt"
 	"flag"
 	"os"
 	"./scmgo"
@@ -24,5 +24,6 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println(code)
+	code.Format(os.Stdout)
+	// fmt.Println(code)
 }

@@ -82,9 +82,17 @@ func code_parser(cin chan string, term bool) (code SchemeObject, err error) {
 		case ')': // return Cons
 			code = Onil
 			for i := len(objs) - 1; i >= 0; i-- {
-				code = &Cons{car: objs[i], cdr: code}
+				// processing Quote
+				if q, ok := objs[i].(*Quote); ok {
+					cons, ok := code.(*Cons)
+					if !ok { panic("quote in the end of S-Expression") }
+					q.objs = cons.car
+					cons.car = q
+				} else {
+					code = &Cons{car: objs[i], cdr: code}
+				}
 			}
-			return
+			return code, nil
 		case '#': // Boolean
 			if chunk[1] == 't' {
 				obj = Otrue
@@ -96,6 +104,11 @@ func code_parser(cin chan string, term bool) (code SchemeObject, err error) {
 			obj = &String{str: chunk[1:len(chunk)-1]}
 		case '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
 			// Integer & Float
+			if chunk[0] == '-' && len(chunk) == 1 {
+				// - without number is symbol
+				obj = &Symbol{name: chunk}
+				continue
+			}
 			if strings.Index(chunk, ".") != -1 {
 				obj, err = Float_from_string(chunk)
 				if err != nil { panic(err) }
@@ -111,10 +124,14 @@ func code_parser(cin chan string, term bool) (code SchemeObject, err error) {
 		objs = append(objs, obj)
 	}
 	if term { panic("parenthesis not close") }
+
+	code = Onil
+	for i := len(objs) - 1; i >= 0; i-- {
+		code = &Cons{car: objs[i], cdr: code}
+	}
 	return code, nil
 }
 
-// func BuildCode(source []rune) (code SchemeObject, err error) {
 func BuildCode(source io.Reader) (code SchemeObject, err error) {
 	cpipe := make(chan string)
 	go grammar_parser(source, cpipe)
