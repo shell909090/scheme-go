@@ -34,9 +34,28 @@ func (o *Cons) Exec(stack *Stack, env *Env, objs SchemeObject) (rslt SchemeObjec
 
 func (o *Cons) Format(s io.Writer, lv int) (err error) {
 	anycons := o.anyCons()
+
 	obj := o
 	s.Write([]byte("("))
 	obj.car.Format(s, lv+1)
+
+	if u, ok := o.car.(*Symbol); anycons && ok {
+		switch u.name {
+		case "if":
+			lv += 3
+			obj, ok = obj.cdr.(*Cons)
+			if !ok { panic("") }
+			s.Write([]byte(" "))
+			obj.car.Format(s, lv+4)
+		case "define", "lambda":
+			lv += 1
+			obj, ok = obj.cdr.(*Cons)
+			if !ok { panic("") }
+			s.Write([]byte(" "))
+			obj.car.Format(s, lv+6)
+		}
+	}
+
 	for {
 		switch u := obj.cdr.(type) {
 		case *Nil:
