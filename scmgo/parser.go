@@ -19,11 +19,10 @@ func translate_string(dst []rune) ([]rune) {
 	return []rune(s)
 }
 
-// func grammar_parser(source []rune, cout chan []rune) {
-func grammar_parser(source io.Reader, cout chan string) {
+func grammar_parser(source io.ReadCloser, cout chan string) {
 	var err error
 	src := bufio.NewReader(source)
-	// defer source.Close()
+	defer source.Close()
 	defer close(cout)
 
 	// performance
@@ -132,7 +131,7 @@ func code_parser(cin chan string, term bool) (code SchemeObject, err error) {
 	return code, nil
 }
 
-func BuildCode(source io.Reader) (code SchemeObject, err error) {
+func BuildCode(source io.ReadCloser) (code SchemeObject, err error) {
 	cpipe := make(chan string)
 	go grammar_parser(source, cpipe)
 	// for chunk, ok := <- cpipe; ok; chunk, ok = <- cpipe {
