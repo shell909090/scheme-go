@@ -1,142 +1,80 @@
 package scmgo
 
-import (
-	// "fmt"
-	"bufio"
-	"io"
-	"strings"
-)
+import "strings"
 
 const control_chars = "()' \n\r\t"
 
-func translate_string(dst []rune) ([]rune) {
-	s := string(dst)
-	s = strings.Replace(s, "\\t", "\t", -1)
-	s = strings.Replace(s, "\\r", "\r", -1)
-	s = strings.Replace(s, "\\n", "\n", -1)
-	s = strings.Replace(s, "\\\"", "\"", -1)
-	s = strings.Replace(s, "\\\\", "\\", -1)
-	return []rune(s)
-}
-
-func grammar_parser(source io.ReadCloser, cout chan string) {
-	var err error
-	src := bufio.NewReader(source)
-	defer source.Close()
-	defer close(cout)
-
-	// performance
-	var symbolbuf []rune
-	for c, _, err := src.ReadRune(); err == nil; c, _, err = src.ReadRune() {
-		switch c {
-		case '(', ')', '\'': // control chars
-			if symbolbuf != nil {
-				cout <- string(symbolbuf)
-				symbolbuf = nil
-			}
-			cout <- string(c)
-		case ' ', '\n', '\r', '\t': // empty chars
-			if symbolbuf != nil {
-				cout <- string(symbolbuf)
-				symbolbuf = nil
-			}
-		case '"': // string
-			if symbolbuf != nil {
-				panic("quote in symbol")
-			}
-			var l string
-			line, err := src.ReadString('"')
-			for ; line[len(line)-2] == '\\'; {
-				l, err = src.ReadString('"')
-				switch err {
-				case nil:
-				case io.EOF: panic("quote not closed")
-				default: panic(err)
-				}
-				line += l
-			}
-			cout <- line
-		case ';': // comment
-			if symbolbuf != nil {
-				panic("comment in symbol")
-			}
-			_, err := src.ReadString('\n')
-			if err != nil { break }
-		default: // symbol
-			symbolbuf = append(symbolbuf, c)
-		}
+func CodeNumber(chunk string) (obj SchemeObject, err error) {
+	if strings.Index(chunk, ".") != -1 {
+		obj, err = FloatFromString(chunk)
+	} else {
+		obj, err = IntegerFromString(chunk)
 	}
-	if err == io.EOF { err = nil }
-	if err != nil { panic(err) }
+	return
 }
 
-func code_parser(cin chan string, term bool) (code SchemeObject, err error) {
+func CodeParser(cin chan string) (code SchemeObject, err error) {
 	var obj SchemeObject
 	var objs []SchemeObject
-	for chunk, ok := <- cin; ok; chunk, ok = <- cin {
-		switch chunk[0]{
-		case '(': // Cons
-			obj, err = code_parser(cin, true)
-			if err != nil { return nil, err }
-		case ')': // return Cons
-			code = Onil
-			for i := len(objs) - 1; i >= 0; i-- {
-				// processing Quote
-				if q, ok := objs[i].(*Quote); ok {
-					cons, ok := code.(*Cons)
-					if !ok { panic("quote in the end of S-Expression") }
-					q.objs = cons.car
-					cons.car = q
-				} else {
-					code = &Cons{car: objs[i], cdr: code}
-				}
-			}
-			return code, nil
+
+QUIT:
+	for chunk, ok := <-cin; ok; chunk, ok = <-cin {
+		switch chunk[0] {
 		case '#': // Boolean
-			if chunk[1] == 't' {
-				obj = Otrue
-			} else {
-				obj = Ofalse
+			obj, err = BooleanFromString(chunk)
+			if err != nil {
+				return
 			}
 		case '"': // String
-			if chunk[len(chunk)-1] != '"' { panic("quote not closed") }
-			obj = &String{str: chunk[1:len(chunk)-1]}
+			obj = StringFromString(chunk[1 : len(chunk)-1])
 		case '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
-			// Integer & Float
 			if chunk[0] == '-' && len(chunk) == 1 {
 				// - without number is symbol
-				obj = &Symbol{name: chunk}
+				obj = SymbolFromString(chunk)
 				continue
 			}
-			if strings.Index(chunk, ".") != -1 {
-				obj, err = Float_from_string(chunk)
-				if err != nil { panic(err) }
-			} else {
-				obj, err = Integer_from_string(chunk)
-				if err != nil { panic(err) }
+			// Integer & Float
+			obj, err = CodeNumber(chunk)
+			if err != nil {
+				return
 			}
 		case '\'': // Quote
 			obj = new(Quote)
+		case ';': // Comment
+			obj = nil
+		case '(': // Cons
+			obj, err = CodeParser(cin)
+			if err != nil {
+				return nil, err
+			}
+		case ')': // return Cons
+			break QUIT
 		default: // Symbol
-			obj = &Symbol{name: chunk}
+			obj = SymbolFromString(chunk)
 		}
+
+		if obj == nil { // pass comment
+			continue
+		}
+
+		// processing Quote
+		if len(objs) > 0 {
+			o := objs[len(objs)-1]
+			if last, ok := o.(*Quote); ok {
+				last.objs = obj
+				continue
+			}
+		}
+
 		objs = append(objs, obj)
 	}
-	if term { panic("parenthesis not close") }
 
-	code = Onil
-	for i := len(objs) - 1; i >= 0; i-- {
-		code = &Cons{car: objs[i], cdr: code}
+	if len(objs) > 0 {
+		o := objs[len(objs)-1]
+		if last, ok := o.(*Quote); ok && last.objs == nil {
+			return code, ErrQuoteInEnd
+		}
 	}
-	return code, nil
-}
 
-func BuildCode(source io.ReadCloser) (code SchemeObject, err error) {
-	cpipe := make(chan string)
-	go grammar_parser(source, cpipe)
-	// for chunk, ok := <- cpipe; ok; chunk, ok = <- cpipe {
-	// 	fmt.Println("chunk:", string(chunk))
-	// }
-	// return nil, nil
-	return code_parser(cpipe, false)
+	return ListFromSlice(objs), nil
 }

@@ -4,7 +4,8 @@ import (
 	// "fmt"
 	"flag"
 	"os"
-	"./scmgo"
+
+	"bitbucket.org/shell909090/scheme-go/scmgo"
 )
 
 func main() {

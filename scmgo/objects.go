@@ -10,7 +10,7 @@ type SchemeObject interface {
 	Format(s io.Writer, lv int) (err error)
 }
 
-type Nil struct {}
+type Nil struct{}
 
 var Onil = &Nil{}
 
@@ -44,13 +44,17 @@ func (o *Cons) Format(s io.Writer, lv int) (err error) {
 		case "if":
 			lv += 3
 			obj, ok = obj.cdr.(*Cons)
-			if !ok { panic("") }
+			if !ok {
+				panic("")
+			}
 			s.Write([]byte(" "))
 			obj.car.Format(s, lv+4)
 		case "define", "lambda":
 			lv += 1
 			obj, ok = obj.cdr.(*Cons)
-			if !ok { panic("") }
+			if !ok {
+				panic("")
+			}
 			s.Write([]byte(" "))
 			obj.car.Format(s, lv+6)
 		}
@@ -81,12 +85,16 @@ func (o *Cons) Format(s io.Writer, lv int) (err error) {
 	return
 }
 
-func (o *Cons) Iter(f func(obj SchemeObject) (bool)) {
+func (o *Cons) Iter(f func(obj SchemeObject) bool) {
 	for i := o; ; {
-		if f(i.car) { return }
+		if f(i.car) {
+			return
+		}
 		switch t := i.cdr.(type) {
-		case *Cons: i = t
-		case *Nil: return
+		case *Cons:
+			i = t
+		case *Nil:
+			return
 		default:
 			f(t)
 			return
@@ -95,13 +103,21 @@ func (o *Cons) Iter(f func(obj SchemeObject) (bool)) {
 }
 
 func (o *Cons) anyCons() (yes bool) {
-	o.Iter(func (obj SchemeObject) (bool) {
+	o.Iter(func(obj SchemeObject) bool {
 		if _, yes = obj.(*Cons); yes {
 			return true
 		}
 		return false
 	})
 	return
+}
+
+func ListFromSlice(s []SchemeObject) (o SchemeObject) {
+	o = Onil
+	for i := len(s) - 1; i >= 0; i-- {
+		o = &Cons{car: s[i], cdr: o}
+	}
+	return o
 }
 
 type Symbol struct {
@@ -115,6 +131,10 @@ func (o *Symbol) Exec(stack *Stack, env *Env, objs SchemeObject) (rslt SchemeObj
 func (o *Symbol) Format(s io.Writer, lv int) (err error) {
 	s.Write([]byte(o.name))
 	return nil
+}
+
+func SymbolFromString(s string) (o *Symbol) {
+	return &Symbol{name: s}
 }
 
 type Quote struct {
@@ -149,9 +169,21 @@ func (o *Boolean) Format(s io.Writer, lv int) (err error) {
 }
 
 var (
-	Otrue = &Boolean{b: true}
+	Otrue  = &Boolean{b: true}
 	Ofalse = &Boolean{b: false}
 )
+
+func BooleanFromString(s string) (o *Boolean, err error) {
+	// FIXME: not so good
+	switch s[1] {
+	case 't':
+		return Otrue, nil
+	case 'f':
+		return Ofalse, nil
+	default:
+		return nil, ErrBooleanUnknown
+	}
+}
 
 type Integer struct {
 	num int
@@ -166,9 +198,11 @@ func (o *Integer) Format(s io.Writer, lv int) (err error) {
 	return nil
 }
 
-func Integer_from_string(s string) (o *Integer, err error) {
-	i, err := strconv.Atoi(string(s))
-	if err != nil { return }
+func IntegerFromString(s string) (o *Integer, err error) {
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		return
+	}
 	return &Integer{num: i}, nil
 }
 
@@ -185,9 +219,11 @@ func (o *Float) Format(s io.Writer, lv int) (err error) {
 	return nil
 }
 
-func Float_from_string(s string) (o *Float, err error) {
+func FloatFromString(s string) (o *Float, err error) {
 	i, err := strconv.ParseFloat(s, 64)
-	if err != nil { return }
+	if err != nil {
+		return
+	}
 	return &Float{num: i}, nil
 }
 
@@ -204,4 +240,8 @@ func (o *String) Format(s io.Writer, lv int) (err error) {
 	s.Write([]byte(o.str))
 	s.Write([]byte("\""))
 	return nil
+}
+
+func StringFromString(s string) (o *String) {
+	return &String{str: s}
 }
