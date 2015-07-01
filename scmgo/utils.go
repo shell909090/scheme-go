@@ -12,6 +12,10 @@ var (
 	ErrParenthesisNotClose = errors.New("parenthesis not close")
 	ErrBooleanUnknown      = errors.New("unknown boolean")
 	ErrQuoteInEnd          = errors.New("quote in the end of S-Expression")
+	ErrListOutOfIndex      = errors.New("out of index when get list")
+	ErrRuntimeType         = errors.New("runtime type error")
+	ErrISNotAList          = errors.New("object is not a list")
+	ErrRuntimeUnknown      = errors.New("runtime unknown error")
 )
 
 func BuildCode(source io.ReadCloser) (code SchemeObject, err error) {

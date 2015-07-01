@@ -26,7 +26,7 @@ QUIT:
 				return
 			}
 		case '"': // String
-			obj = StringFromString(chunk[1 : len(chunk)-1])
+			obj = String(chunk[1 : len(chunk)-1])
 		case '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
 			if chunk[0] == '-' && len(chunk) == 1 {
 				// - without number is symbol
