@@ -1,5 +1,11 @@
 package scmgo
 
+type Frame interface {
+	SetParent(p Frame)
+	GetParent() (p Frame)
+	Exec(i SchemeObject) (r SchemeObject, next Frame, err error)
+}
+
 // type OFunction struct {
 // 	Name   string
 // 	Env    Environ
@@ -63,45 +69,6 @@ package scmgo
 // 	return stack.Call(t, envs)
 // }
 
-type Environ struct {
-	Parent *Environ
-	Names  map[string]SchemeObject
-	// Fast   map[string]SchemeObject
-}
-
-// func (e *Env) GenFast() {
-// }
-
-func (e *Environ) Fork(r map[string]SchemeObject) (ne *Environ) {
-	if r == nil {
-		r = make(map[string]SchemeObject)
-	}
-	ne = &Environ{
-		Parent: e,
-		Names:  r,
-	}
-	return ne
-}
-
-func (e *Environ) Add(name string, value SchemeObject) {
-	e.Names[name] = value
-	// e.Fast[name] = value
-}
-
-func (e *Environ) Get(name string) (value SchemeObject, ok bool) {
-	for ce := e; ce != nil; ce = e.Parent {
-		value, ok = e.Names[name]
-		if ok {
-			return
-		}
-	}
-	return nil, false
-}
-
-type Frame interface {
-	Eval(stack *Stack, i SchemeObject) (r SchemeObject, popup bool, err error)
-}
-
 // type Frame struct {
 // 	Obj    SchemeObject
 // 	Env    *Environ
@@ -143,24 +110,6 @@ func (s *Stack) Pop() {
 // 	}
 // }
 
-func (s *Stack) Trampoline() (result SchemeObject, err error) {
-	var popup bool
-
-	for len(s.Frames) > 0 {
-		f := s.Frames[len(s.Frames)-1]
-
-		result, popup, err = f.Eval(s, result)
-		if err != nil {
-			return
-		}
-
-		if popup {
-			s.Pop()
-		}
-	}
-	return
-}
-
 func (s *Stack) Apply(o SchemeObject, p *Cons) {
 	// apply a set of parameters to a object
 	// if o.IsApplicativeOrder() {
@@ -172,12 +121,63 @@ func (s *Stack) Apply(o SchemeObject, p *Cons) {
 }
 
 type EvalFrame struct {
-	Obj SchemeObject
-	Env *Environ
+	Parent Frame
+	Obj    SchemeObject
+	Env    *Environ
 }
 
-func (ef *EvalFrame) Eval(stack *Stack, i SchemeObject) (r SchemeObject, popup bool, err error) {
-	_, err = obj.Eval(stack, ef.Env)
+func (ef *EvalFrame) SetParent(p Frame) {
+	ef.Parent = p
+}
+
+func (ef *EvalFrame) GetParent() (p Frame) {
+	return ef.Parent
+}
+
+func (ef *EvalFrame) Exec(i SchemeObject) (r SchemeObject, next Frame, err error) {
+	r, next, err = ef.Obj.Eval(ef.Env)
+	if err != nil {
+		return
+	}
+	if next == nil {
+		next = ef.Parent
+	} else {
+		next.SetParent(ef)
+	}
+	return
+}
+
+type PrognFrame struct {
+	Parent Frame
+	P      *Cons
+	Env    *Environ
+}
+
+func (pf *PrognFrame) Exec(i SchemeObject) (r SchemeObject, next Frame, err error) {
+	return
+}
+
+func (pf *PrognFrame) Eval(stack *Stack, i SchemeObject) (r SchemeObject, popup bool, err error) {
+	// var ok bool
+	// switch {
+	// case pf.P == Onil:
+	// 	return Onil, true, nil
+	// case pf.P.Cdr == Onil:
+	// 	stack.Pop()
+	// 	// jump into
+	// default:
+	// 	obj := pf.P.Car
+	// 	pf.P, ok = pf.P.Cdr.(*Cons)
+	// 	if !ok {
+	// 		return nil, false, ErrISNotAList
+	// 	}
+	// 	_, err = obj.Eval(pf.Env)
+	// 	if err != nil {
+	// 		return
+	// 	}
+	// 	return nil, false, nil
+	// }
+	// return i, true, nil
 	return
 }
 
@@ -188,32 +188,4 @@ type ApplyFrame struct {
 
 func (af *ApplyFrame) Eval(stack *Stack, i SchemeObject) (r SchemeObject, popup bool, err error) {
 	return
-}
-
-type PrognFrame struct {
-	P   *Cons
-	Env *Environ
-}
-
-func (pf *PrognFrame) Eval(stack *Stack, i SchemeObject) (r SchemeObject, popup bool, err error) {
-	var ok bool
-	switch {
-	case pf.P == Onil:
-		return Onil, true, nil
-	case pf.P.Cdr == Onil:
-		stack.Pop()
-		// jump into
-	default:
-		obj := pf.P.Car
-		pf.P, ok = pf.P.Cdr.(*Cons)
-		if !ok {
-			return nil, false, ErrISNotAList
-		}
-		_, err = obj.Eval(stack, pf.Env)
-		if err != nil {
-			return
-		}
-		return nil, false, nil
-	}
-	return i, true, nil
 }

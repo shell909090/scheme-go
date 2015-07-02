@@ -16,7 +16,20 @@ var (
 	ErrRuntimeType         = errors.New("runtime type error")
 	ErrISNotAList          = errors.New("object is not a list")
 	ErrRuntimeUnknown      = errors.New("runtime unknown error")
+	ErrNameNotFound        = errors.New("name not found")
 )
+
+func Trampoline(init_frame Frame, init_obj SchemeObject) (result SchemeObject, err error) {
+	f := init_frame
+	result = init_obj
+	for f != nil {
+		result, f, err = f.Exec(result)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
 
 func BuildCode(source io.ReadCloser) (code SchemeObject, err error) {
 	cpipe := make(chan string)
