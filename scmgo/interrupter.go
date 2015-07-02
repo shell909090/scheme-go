@@ -1,14 +1,17 @@
 package scmgo
 
+import "fmt"
+
 type Frame interface {
-	Debug() (r string, err error)
+	Debug() (r string)
 	SetParent(p Frame)
 	// GetParent() (p Frame)
 	Exec(i SchemeObject) (r SchemeObject, next Frame, err error)
 }
 
-type Applicable interface {
+type Procedure interface {
 	IsApplicativeOrder() bool
+	Apply(i SchemeObject, p Frame) (r SchemeObject, next Frame, err error)
 }
 
 // type OFunction struct {
@@ -26,7 +29,7 @@ type Applicable interface {
 // 	}
 // 	s, ok := t.(*Symbol)
 // 	if !ok {
-// 		return nil, ErrRuntimeType
+// 		return nil, ErrType
 // 	}
 // 	return
 // }
@@ -37,7 +40,7 @@ type Applicable interface {
 // 	pn = o.Params         // parameters by name
 // 	pv, ok = objs.(*Cons) // parameters by vector
 // 	if !ok {
-// 		return ErrRuntimeType
+// 		return ErrType
 // 	}
 // 	for pn != nil && pv != nil {
 // 		s, err := GetNAsSymbol(pn, 0)
@@ -70,8 +73,8 @@ func CreateEvalFrame(o SchemeObject, e *Environ) (f Frame) {
 	return &EvalFrame{Obj: o, Env: e}
 }
 
-func (ef *EvalFrame) Debug() (r string, err error) {
-	return "EvalFrame", nil
+func (ef *EvalFrame) Debug() (r string) {
+	return fmt.Sprintf("EvalFrame: {%s}", SchemeObjectToString(ef.Obj))
 }
 
 func (ef *EvalFrame) SetParent(p Frame) {
@@ -83,7 +86,10 @@ func (ef *EvalFrame) SetParent(p Frame) {
 // }
 
 func (ef *EvalFrame) Exec(i SchemeObject) (r SchemeObject, next Frame, err error) {
-	r, next, err = ef.Obj.Eval(ef.Env, ef)
+	r, next, err = ef.Obj.Eval(ef.Env, ef.Parent)
+	if next == nil {
+		next = ef.Parent
+	}
 	return
 }
 
@@ -97,8 +103,8 @@ func CreatePrognFrame(o *Cons, e *Environ) (f Frame) {
 	return &PrognFrame{Obj: o, Env: e}
 }
 
-func (pf *PrognFrame) Debug() (r string, err error) {
-	return "PrognFrame", nil
+func (pf *PrognFrame) Debug() (r string) {
+	return "PrognFrame"
 }
 
 func (pf *PrognFrame) SetParent(p Frame) {
@@ -110,7 +116,8 @@ func (pf *PrognFrame) SetParent(p Frame) {
 // }
 
 func (pf *PrognFrame) Exec(i SchemeObject) (r SchemeObject, next Frame, err error) {
-	var ok bool
+	var obj SchemeObject
+
 	switch {
 	case pf.Obj == Onil:
 		return Onil, pf.Parent, nil
@@ -119,10 +126,8 @@ func (pf *PrognFrame) Exec(i SchemeObject) (r SchemeObject, next Frame, err erro
 		next = CreateEvalFrame(obj, pf.Env)
 		next.SetParent(pf.Parent)
 	default:
-		obj := pf.Obj.Car
-		pf.Obj, ok = pf.Obj.Cdr.(*Cons)
-		if !ok {
-			err = ErrISNotAList
+		obj, pf.Obj, err = pf.Obj.Pop()
+		if err != nil {
 			return
 		}
 
@@ -133,18 +138,20 @@ func (pf *PrognFrame) Exec(i SchemeObject) (r SchemeObject, next Frame, err erro
 }
 
 type ApplyFrame struct {
-	Parent Frame
-	P      Procedure
-	Args   *Cons
-	Env    *Environ
+	Parent     Frame
+	P          Procedure
+	Args       *Cons
+	EvaledArgs *Cons
+	EvaledTail *Cons
+	Env        *Environ
 }
 
 func CreateApplyFrame(o *Cons, e *Environ) (f Frame) {
 	return &ApplyFrame{Args: o, Env: e}
 }
 
-func (af *ApplyFrame) Debug() (r string, err error) {
-	return "ApplyFrame", nil
+func (af *ApplyFrame) Debug() (r string) {
+	return "ApplyFrame"
 }
 
 func (af *ApplyFrame) SetParent(p Frame) {
@@ -152,12 +159,51 @@ func (af *ApplyFrame) SetParent(p Frame) {
 }
 
 func (af *ApplyFrame) Exec(i SchemeObject) (r SchemeObject, next Frame, err error) {
+	var ok bool
+	var obj SchemeObject
+
+	// accept argument
 	if af.P == nil {
-		af.P = i
+		af.P, ok = i.(Procedure)
+		if !ok {
+			return nil, nil, ErrNotRunnable
+		}
+
+		if !af.P.IsApplicativeOrder() {
+			// TODO: normal order
+			return
+		}
+
+		af.EvaledArgs = Onil
+	} else {
+		t := &Cons{Car: i, Cdr: Onil}
+		if af.EvaledArgs == Onil {
+			af.EvaledArgs = t
+			af.EvaledTail = t
+		} else {
+			af.EvaledTail.Cdr = t
+			af.EvaledTail = t
+		}
 	}
 
 	if af.Args == Onil { // all args has been evaled
-
+		r, next, err = af.P.Apply(af.EvaledArgs, af.Parent)
+		if err != nil {
+			log.Error("%s", err)
+			return
+		}
+		if next == nil {
+			next = af.Parent
+		}
+		return
 	}
+
+	obj, af.Args, err = af.Args.Pop()
+	if err != nil {
+		return
+	}
+
+	next = CreateEvalFrame(obj, af.Env)
+	next.SetParent(af)
 	return
 }

@@ -31,12 +31,11 @@ QUIT:
 			if chunk[0] == '-' && len(chunk) == 1 {
 				// - without number is symbol
 				obj = SymbolFromString(chunk)
-				continue
-			}
-			// Integer & Float
-			obj, err = CodeNumber(chunk)
-			if err != nil {
-				return
+			} else { // Integer & Float
+				obj, err = CodeNumber(chunk)
+				if err != nil {
+					return
+				}
 			}
 		case '\'': // Quote
 			obj = new(Quote)

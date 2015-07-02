@@ -6,7 +6,7 @@ import (
 )
 
 type Evalor interface {
-	Eval(env *Environ, p Frame) (r SchemeObject, f Frame, err error)
+	Eval(env *Environ, p Frame) (r SchemeObject, next Frame, err error)
 }
 
 type Formatter interface {
@@ -22,7 +22,7 @@ type Symbol struct {
 	Name string
 }
 
-func (o *Symbol) Eval(env *Environ, p Frame) (r SchemeObject, f Frame, err error) {
+func (o *Symbol) Eval(env *Environ, p Frame) (r SchemeObject, next Frame, err error) {
 	r, ok := env.Get(o.Name)
 	if !ok {
 		return nil, nil, ErrNameNotFound
@@ -43,7 +43,7 @@ type Quote struct {
 	objs SchemeObject
 }
 
-func (o *Quote) Eval(env *Environ, p Frame) (r SchemeObject, f Frame, err error) {
+func (o *Quote) Eval(env *Environ, p Frame) (r SchemeObject, next Frame, err error) {
 	r = o.objs
 	return
 }
@@ -56,7 +56,7 @@ func (o *Quote) Format(s io.Writer, lv int) (rv int, err error) {
 
 type Boolean bool
 
-func (o Boolean) Eval(env *Environ, p Frame) (r SchemeObject, f Frame, err error) {
+func (o Boolean) Eval(env *Environ, p Frame) (r SchemeObject, next Frame, err error) {
 	r = o
 	return
 }
@@ -71,8 +71,8 @@ func (o Boolean) Format(s io.Writer, lv int) (rv int, err error) {
 }
 
 const (
-	Otrue  = true
-	Ofalse = false
+	Otrue  = Boolean(true)
+	Ofalse = Boolean(false)
 )
 
 func BooleanFromString(s string) (o Boolean, err error) {
@@ -89,7 +89,7 @@ func BooleanFromString(s string) (o Boolean, err error) {
 
 type Integer int
 
-func (o Integer) Eval(env *Environ, p Frame) (r SchemeObject, f Frame, err error) {
+func (o Integer) Eval(env *Environ, p Frame) (r SchemeObject, next Frame, err error) {
 	r = o
 	return
 }
@@ -107,7 +107,7 @@ func IntegerFromString(s string) (o Integer, err error) {
 
 type Float float64
 
-func (o Float) Eval(env *Environ, p Frame) (r SchemeObject, f Frame, err error) {
+func (o Float) Eval(env *Environ, p Frame) (r SchemeObject, next Frame, err error) {
 	r = o
 	return
 }
@@ -125,7 +125,7 @@ func FloatFromString(s string) (o Float, err error) {
 
 type String string
 
-func (o String) Eval(env *Environ, p Frame) (r SchemeObject, f Frame, err error) {
+func (o String) Eval(env *Environ, p Frame) (r SchemeObject, next Frame, err error) {
 	r = o
 	return
 }
@@ -145,23 +145,22 @@ type Cons struct {
 
 var Onil = &Cons{}
 
-func (o *Cons) Eval(env *Environ, p Frame) (r SchemeObject, f Frame, err error) {
-	procedure := o.Car
-	o, ok := o.Cdr.(*Cons)
-	if !ok {
-		return nil, nil, ErrISNotAList
+func (o *Cons) Eval(env *Environ, p Frame) (r SchemeObject, next Frame, err error) {
+	var procedure SchemeObject
+
+	procedure, o, err = o.Pop()
+	if err != nil {
+		return
 	}
 
-	af := ApplyFrame(o, env)
+	af := CreateApplyFrame(o, env)
 	af.SetParent(p)
-	f = CreateEvalFrame(procedure, env)
-	f.SetParent(af)
+	next = CreateEvalFrame(procedure, env)
+	next.SetParent(af)
 	return
 }
 
 func (o *Cons) Format(s io.Writer, lv int) (rv int, err error) {
-	var ok bool
-
 	if o.Car == nil || o.Cdr == nil {
 		_, err = s.Write([]byte("()"))
 		return lv + 2, err
@@ -171,32 +170,37 @@ func (o *Cons) Format(s io.Writer, lv int) (rv int, err error) {
 	if err != nil {
 		return
 	}
-	if !anycons {
-		s.Write([]byte("("))
-		rv = lv + 1
-		ok = true
-		for i := o; i != Onil; i, ok = i.Cdr.(*Cons) {
-			if !ok {
-				return rv, ErrISNotAList
-			}
-			rv, err = i.Car.Format(s, rv)
-			if err != nil {
-				return
-			}
-			rv += 1
-			if i.Cdr != Onil {
-				s.Write([]byte(" "))
-			}
-		}
-		s.Write([]byte(")"))
-		return
+	if anycons {
+		return o.PrettyFormat(s, lv)
 	}
 
+	s.Write([]byte("("))
+	rv = lv + 1
+
+	ok := true
+	for i := o; i != Onil; i, ok = i.Cdr.(*Cons) {
+		if !ok {
+			return rv, ErrISNotAList
+		}
+		rv, err = i.Car.Format(s, rv)
+		if err != nil {
+			return
+		}
+		rv += 1
+		if i.Cdr != Onil { // not last one
+			s.Write([]byte(" "))
+		}
+	}
+	s.Write([]byte(")")) // last one here
+	return
+}
+
+func (o *Cons) PrettyFormat(s io.Writer, lv int) (rv int, err error) {
 	obj := o
 	s.Write([]byte("("))
 	lv += 1
 
-	if _, ok = obj.Car.(*Symbol); ok {
+	if _, ok := obj.Car.(*Symbol); ok {
 		rv, err = obj.Car.Format(s, lv)
 		if err != nil {
 			return
@@ -211,9 +215,9 @@ func (o *Cons) Format(s io.Writer, lv int) (rv int, err error) {
 		ok = true
 	}
 
-	for ; ; obj, ok = obj.Cdr.(*Cons) {
-		switch {
-		case !ok:
+	ok := true
+	for ; obj != Onil; obj, ok = obj.Cdr.(*Cons) {
+		if !ok {
 			s.Write([]byte(" . "))
 			lv += 3
 
@@ -224,10 +228,6 @@ func (o *Cons) Format(s io.Writer, lv int) (rv int, err error) {
 
 			s.Write([]byte(")"))
 			rv += 1
-			return
-		case obj == Onil:
-			s.Write([]byte(")"))
-			rv = lv + 1
 			return
 		}
 
@@ -243,19 +243,39 @@ func (o *Cons) Format(s io.Writer, lv int) (rv int, err error) {
 		}
 	}
 
+	s.Write([]byte(")"))
+	rv = lv + 1
 	return
 }
 
-func (o *Cons) Iter(f func(obj SchemeObject) bool) (err error) {
+func (o *Cons) Iter(f func(obj SchemeObject) (e error)) (err error) {
 	ok := true
 	for i := o; i != Onil; i, ok = i.Cdr.(*Cons) {
 		if !ok {
 			return ErrISNotAList
 		}
-		if !f(i.Car) {
+		err = f(i.Car)
+		if err != nil {
 			return
 		}
 	}
+	return
+}
+
+func (o *Cons) Pop() (r SchemeObject, next *Cons, err error) {
+	r = o.Car
+	next, ok := o.Cdr.(*Cons)
+	if !ok {
+		return nil, nil, ErrISNotAList
+	}
+	return
+}
+
+func (o *Cons) Len() (n int, err error) {
+	err = o.Iter(func(obj SchemeObject) (e error) {
+		n += 1
+		return
+	})
 	return
 }
 
@@ -265,7 +285,7 @@ func (o *Cons) GetN(n int) (r SchemeObject, err error) {
 	for i := 0; i < n; i++ {
 		switch c.Cdr {
 		case nil:
-			return nil, ErrRuntimeUnknown
+			return nil, ErrUnknown
 		case Onil:
 			return nil, ErrListOutOfIndex
 		}
@@ -278,10 +298,16 @@ func (o *Cons) GetN(n int) (r SchemeObject, err error) {
 }
 
 func (o *Cons) anyCons() (yes bool, err error) {
-	err = o.Iter(func(obj SchemeObject) bool {
+	err = o.Iter(func(obj SchemeObject) (e error) {
 		_, yes = obj.(*Cons)
-		return !yes
+		if yes {
+			e = ErrUnknown
+		}
+		return
 	})
+	if err == ErrUnknown {
+		err = nil
+	}
 	return
 }
 
@@ -293,17 +319,34 @@ func ListFromSlice(s []SchemeObject) (o SchemeObject) {
 	return o
 }
 
-// type Function struct {
-// }
+type GoFunc struct {
+	Name string
+	f    func(i *Cons, p Frame) (r SchemeObject, next Frame, err error)
+}
 
-// func (f *Function) IsApplicativeOrder() bool {
-// 	return true
-// }
+func (gf *GoFunc) IsApplicativeOrder() bool {
+	return true
+}
 
-// func (f *Function) Eval(env *Environ, p Frame) (r SchemeObject, f Frame, err error) {
+func (gf *GoFunc) Eval(env *Environ, p Frame) (r SchemeObject, next Frame, err error) {
+	panic("run eval of gofunc")
+}
 
-// }
+func (gf *GoFunc) Apply(i SchemeObject, p Frame) (r SchemeObject, next Frame, err error) {
+	o, ok := i.(*Cons)
+	if !ok {
+		return nil, nil, ErrType
+	}
 
-// func (f *Function) Format(s io.Writer, lv int) (rv int, err error) {
+	log.Debug("apply %s %s", gf.Name, SchemeObjectToString(i))
+	r, next, err = gf.f(o, p)
+	log.Debug("result %s", SchemeObjectToString(r))
+	return
+}
 
-// }
+func (gf *GoFunc) Format(s io.Writer, lv int) (rv int, err error) {
+	s.Write([]byte("!"))
+	rv, err = s.Write([]byte(gf.Name))
+	rv += lv + 1
+	return
+}
