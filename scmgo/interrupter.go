@@ -5,7 +5,6 @@ import "fmt"
 type Frame interface {
 	Debug() (r string)
 	SetParent(p Frame)
-	// GetParent() (p Frame)
 	Exec(i SchemeObject) (r SchemeObject, next Frame, err error)
 }
 
@@ -13,55 +12,6 @@ type Procedure interface {
 	IsApplicativeOrder() bool
 	Apply(i SchemeObject, p Frame) (r SchemeObject, next Frame, err error)
 }
-
-// type OFunction struct {
-// 	Name   string
-// 	Env    Environ
-// 	Params *Cons
-// 	Objs   SchemeObject
-// 	evaled bool
-// }
-
-// func GetNAsSymbol(p *Cons, n int) (s *Symbol, err error) {
-// 	t, err := p.GetN(n)
-// 	if err != nil {
-// 		return
-// 	}
-// 	s, ok := t.(*Symbol)
-// 	if !ok {
-// 		return nil, ErrType
-// 	}
-// 	return
-// }
-
-// func (o *OFunction) Eval(o SchemeObject, stack *Stack, env *Environ) (r SchemeObject, err error) {
-// 	r := make(map[string]SchemeObject)
-// 	var pn, pv *Cons
-// 	pn = o.Params         // parameters by name
-// 	pv, ok = objs.(*Cons) // parameters by vector
-// 	if !ok {
-// 		return ErrType
-// 	}
-// 	for pn != nil && pv != nil {
-// 		s, err := GetNAsSymbol(pn, 0)
-// 		if err != nil {
-// 			return err
-// 		}
-// 		if s.name == "." {
-// 			s1, err := GetNAsSymbol(pn, 1)
-// 			if err != nil {
-// 				return err
-// 			}
-// 			r[s1.name] = pv
-// 			break
-// 		}
-// 		r[s.name] = pv.car
-// 		pn = pn.cdr
-// 		pv = pv.cdr
-// 	}
-// 	ne := o.Env.Fork(r)
-// 	return stack.Jump(&PrognStatus{o.Objs}, ne)
-// }
 
 type EvalFrame struct {
 	Parent Frame
@@ -80,10 +30,6 @@ func (ef *EvalFrame) Debug() (r string) {
 func (ef *EvalFrame) SetParent(p Frame) {
 	ef.Parent = p
 }
-
-// func (ef *EvalFrame) GetParent() (p Frame) {
-// 	return ef.Parent
-// }
 
 func (ef *EvalFrame) Exec(i SchemeObject) (r SchemeObject, next Frame, err error) {
 	r, next, err = ef.Obj.Eval(ef.Env, ef.Parent)
@@ -110,10 +56,6 @@ func (pf *PrognFrame) Debug() (r string) {
 func (pf *PrognFrame) SetParent(p Frame) {
 	pf.Parent = p
 }
-
-// func (pf *PrognFrame) GetParent() (p Frame) {
-// 	return pf.Parent
-// }
 
 func (pf *PrognFrame) Exec(i SchemeObject) (r SchemeObject, next Frame, err error) {
 	var obj SchemeObject

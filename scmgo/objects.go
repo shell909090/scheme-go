@@ -147,7 +147,6 @@ var Onil = &Cons{}
 
 func (o *Cons) Eval(env *Environ, p Frame) (r SchemeObject, next Frame, err error) {
 	var procedure SchemeObject
-
 	procedure, o, err = o.Pop()
 	if err != nil {
 		return
