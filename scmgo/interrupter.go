@@ -98,34 +98,35 @@ func (e *Environ) Get(name string) (value SchemeObject, ok bool) {
 	return nil, false
 }
 
-type Frame struct {
-	Obj    SchemeObject
-	Env    *Environ
-	Status map[string]SchemeObject
+type Frame interface {
+	Eval(stack *Stack, i SchemeObject) (r SchemeObject, popup bool, err error)
 }
 
-func (fm *Frame) Eval(stack *Stack, i SchemeObject) (r SchemeObject, popup bool, err error) {
-	// Ok, we have obj to eval, env, status, and maybe result
-	r, err = fm.Obj.Eval(stack, fm.Env)
-	return
-}
+// type Frame struct {
+// 	Obj    SchemeObject
+// 	Env    *Environ
+// 	Status map[string]SchemeObject
+// }
+
+// func (fm *Frame) Eval(stack *Stack, i SchemeObject) (r SchemeObject, popup bool, err error) {
+// 	// Ok, we have obj to eval, env, status, and maybe result
+// 	r, err = fm.Obj.Eval(stack, fm.Env)
+// 	return
+// }
 
 type Stack struct {
-	Frames []*Frame
+	Frames []Frame
 }
 
-func (s *Stack) Push(o SchemeObject, env *Environ) {
-	f := &Frame{Obj: o, Env: env, Status: make(map[string]SchemeObject)}
-	s.Frames = append(s.Frames, f)
-}
+// func (s *Stack) Eval(o SchemeObject, env *Environ) {
+// 	// actually, this is eval. push a frame to stack means to eval it.
+// 	// call eval in here, and really do eval in `Frame.Eval` .
+// 	f := &Frame{Obj: o, Env: env, Status: make(map[string]SchemeObject)}
+// 	s.Frames = append(s.Frames, f)
+// }
 
 func (s *Stack) Pop() {
 	s.Frames = s.Frames[:len(s.Frames)-2]
-}
-
-func (s *Stack) Eval(o SchemeObject, envs *Environ) (r SchemeObject, err error) {
-	// call eval in here, and really do eval in Frame.Eval
-	return
 }
 
 // func (s *Stack) Exec(o SchemeObject, envs *Environ, objs SchemeObject) (rslt SchemeObject, next bool, err error) {
@@ -158,4 +159,61 @@ func (s *Stack) Trampoline() (result SchemeObject, err error) {
 		}
 	}
 	return
+}
+
+func (s *Stack) Apply(o SchemeObject, p *Cons) {
+	// apply a set of parameters to a object
+	// if o.IsApplicativeOrder() {
+
+	// } else {
+
+	// }
+	return
+}
+
+type EvalFrame struct {
+	Obj SchemeObject
+	Env *Environ
+}
+
+func (ef *EvalFrame) Eval(stack *Stack, i SchemeObject) (r SchemeObject, popup bool, err error) {
+	_, err = obj.Eval(stack, ef.Env)
+	return
+}
+
+type ApplyFrame struct {
+	P   *Cons
+	Env *Environ
+}
+
+func (af *ApplyFrame) Eval(stack *Stack, i SchemeObject) (r SchemeObject, popup bool, err error) {
+	return
+}
+
+type PrognFrame struct {
+	P   *Cons
+	Env *Environ
+}
+
+func (pf *PrognFrame) Eval(stack *Stack, i SchemeObject) (r SchemeObject, popup bool, err error) {
+	var ok bool
+	switch {
+	case pf.P == Onil:
+		return Onil, true, nil
+	case pf.P.Cdr == Onil:
+		stack.Pop()
+		// jump into
+	default:
+		obj := pf.P.Car
+		pf.P, ok = pf.P.Cdr.(*Cons)
+		if !ok {
+			return nil, false, ErrISNotAList
+		}
+		_, err = obj.Eval(stack, pf.Env)
+		if err != nil {
+			return
+		}
+		return nil, false, nil
+	}
+	return i, true, nil
 }

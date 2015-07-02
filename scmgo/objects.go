@@ -6,6 +6,7 @@ import (
 )
 
 type Evalor interface {
+	// IsApplicativeOrder() bool
 	Eval(stack *Stack, env *Environ) (r SchemeObject, err error)
 }
 
@@ -18,35 +19,36 @@ type SchemeObject interface {
 	Formatter
 }
 
-type Nil struct{}
-
-var Onil = &Nil{}
-
-func (o *Nil) Eval(stack *Stack, env *Environ) (r SchemeObject, err error) {
-	return nil, nil
-}
-
-func (o *Nil) Format(s io.Writer, lv int) (err error) {
-	s.Write([]byte("()"))
-	return nil
-}
-
 type Cons struct {
 	Car SchemeObject
 	Cdr SchemeObject
 }
+
+var Onil = &Cons{}
+
+// func (o *Cons) IsApplicativeOrder() bool {
+// 	return true
+// }
 
 func (o *Cons) Eval(stack *Stack, env *Environ) (r SchemeObject, err error) {
 	// f, err := stack.Eval(o.Car, env)
 	// if err != nil {
 	// 	return
 	// }
-	// Apply(f, o.Cdr)
+	// stack.Apply(f, o.Cdr)
 	return nil, nil
 }
 
 func (o *Cons) Format(s io.Writer, lv int) (err error) {
-	anycons := o.anyCons()
+	if o.Car == nil || o.Cdr == nil {
+		_, err = s.Write([]byte("()"))
+		return
+	}
+
+	anycons, err := o.anyCons()
+	if err != nil {
+		return
+	}
 
 	obj := o
 	s.Write([]byte("("))
@@ -58,7 +60,7 @@ func (o *Cons) Format(s io.Writer, lv int) (err error) {
 			lv += 3
 			obj, ok = obj.Cdr.(*Cons)
 			if !ok {
-				panic("")
+				return ErrISNotAList
 			}
 			s.Write([]byte(" "))
 			obj.Car.Format(s, lv+4)
@@ -66,7 +68,7 @@ func (o *Cons) Format(s io.Writer, lv int) (err error) {
 			lv += 1
 			obj, ok = obj.Cdr.(*Cons)
 			if !ok {
-				panic("")
+				return ErrISNotAList
 			}
 			s.Write([]byte(" "))
 			obj.Car.Format(s, lv+6)
@@ -74,11 +76,16 @@ func (o *Cons) Format(s io.Writer, lv int) (err error) {
 	}
 
 	for {
-		switch u := obj.Cdr.(type) {
-		case *Nil:
+		u, ok := obj.Cdr.(*Cons)
+		switch {
+		case !ok:
+			s.Write([]byte(" . "))
+			obj.Car.Format(s, lv+1)
+			return
+		case ok && u == Onil:
 			s.Write([]byte(")"))
 			return
-		case *Cons:
+		default:
 			obj = u
 			if anycons {
 				s.Write([]byte("\n"))
@@ -89,30 +96,22 @@ func (o *Cons) Format(s io.Writer, lv int) (err error) {
 				s.Write([]byte(" "))
 			}
 			obj.Car.Format(s, lv+1)
-		default:
-			s.Write([]byte(" . "))
-			obj.Car.Format(s, lv+1)
-			return
 		}
 	}
 	return
 }
 
-func (o *Cons) Iter(f func(obj SchemeObject) bool) {
-	for i := o; ; {
+func (o *Cons) Iter(f func(obj SchemeObject) bool) (err error) {
+	ok := true
+	for i := o; i != Onil; i, ok = i.Cdr.(*Cons) {
+		if !ok {
+			return ErrISNotAList
+		}
 		if f(i.Car) {
 			return
 		}
-		switch t := i.Cdr.(type) {
-		case *Cons:
-			i = t
-		case *Nil:
-			return
-		default:
-			f(t)
-			return
-		}
 	}
+	return
 }
 
 func (o *Cons) GetN(n int) (r SchemeObject, err error) {
@@ -133,12 +132,10 @@ func (o *Cons) GetN(n int) (r SchemeObject, err error) {
 	return c.Car, nil
 }
 
-func (o *Cons) anyCons() (yes bool) {
-	o.Iter(func(obj SchemeObject) bool {
-		if _, yes = obj.(*Cons); yes {
-			return true
-		}
-		return false
+func (o *Cons) anyCons() (yes bool, err error) {
+	err = o.Iter(func(obj SchemeObject) bool {
+		_, yes = obj.(*Cons)
+		return yes
 	})
 	return
 }
@@ -154,6 +151,10 @@ func ListFromSlice(s []SchemeObject) (o SchemeObject) {
 type Symbol struct {
 	Name string
 }
+
+// func (o *Symbol) IsApplicativeOrder() bool {
+// 	return true
+// }
 
 func (o *Symbol) Eval(stack *Stack, env *Environ) (r SchemeObject, err error) {
 	return nil, nil
@@ -172,6 +173,10 @@ type Quote struct {
 	objs SchemeObject
 }
 
+// func (o *Quote) IsApplicativeOrder() bool {
+// 	return true
+// }
+
 func (o *Quote) Eval(stack *Stack, env *Environ) (r SchemeObject, err error) {
 	return nil, nil
 }
@@ -183,6 +188,10 @@ func (o *Quote) Format(s io.Writer, lv int) (err error) {
 }
 
 type Boolean bool
+
+// func (o Boolean) IsApplicativeOrder() bool {
+// 	return true
+// }
 
 func (o Boolean) Eval(stack *Stack, env *Environ) (r SchemeObject, err error) {
 	return nil, nil
@@ -216,6 +225,10 @@ func BooleanFromString(s string) (o Boolean, err error) {
 
 type Integer int
 
+// func (o Integer) IsApplicativeOrder() bool {
+// 	return true
+// }
+
 func (o Integer) Eval(stack *Stack, env *Environ) (r SchemeObject, err error) {
 	return nil, nil
 }
@@ -232,6 +245,10 @@ func IntegerFromString(s string) (o Integer, err error) {
 
 type Float float64
 
+// func (o Float) IsApplicativeOrder() bool {
+// 	return true
+// }
+
 func (o Float) Eval(stack *Stack, env *Environ) (r SchemeObject, err error) {
 	return nil, nil
 }
@@ -247,6 +264,10 @@ func FloatFromString(s string) (o Float, err error) {
 }
 
 type String string
+
+// func (o String) IsApplicativeOrder() bool {
+// 	return true
+// }
 
 func (o String) Eval(stack *Stack, env *Environ) (r SchemeObject, err error) {
 	return nil, nil
