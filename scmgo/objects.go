@@ -10,7 +10,7 @@ type Evalor interface {
 }
 
 type Formatter interface {
-	Format(s io.Writer, lv int) (err error)
+	Format(s io.Writer, lv int) (rv int, err error)
 }
 
 type SchemeObject interface {
@@ -30,9 +30,9 @@ func (o *Symbol) Eval(env *Environ) (r SchemeObject, f Frame, err error) {
 	return
 }
 
-func (o *Symbol) Format(s io.Writer, lv int) (err error) {
+func (o *Symbol) Format(s io.Writer, lv int) (rv int, err error) {
 	s.Write([]byte(o.Name))
-	return nil
+	return lv + len(o.Name), nil
 }
 
 func SymbolFromString(s string) (o *Symbol) {
@@ -48,10 +48,10 @@ func (o *Quote) Eval(env *Environ) (r SchemeObject, f Frame, err error) {
 	return
 }
 
-func (o *Quote) Format(s io.Writer, lv int) (err error) {
+func (o *Quote) Format(s io.Writer, lv int) (rv int, err error) {
 	s.Write([]byte("'"))
-	o.objs.Format(s, lv)
-	return nil
+	rv, err = o.objs.Format(s, lv+1)
+	return
 }
 
 type Boolean bool
@@ -61,13 +61,13 @@ func (o Boolean) Eval(env *Environ) (r SchemeObject, f Frame, err error) {
 	return
 }
 
-func (o Boolean) Format(s io.Writer, lv int) (err error) {
+func (o Boolean) Format(s io.Writer, lv int) (rv int, err error) {
 	if o {
 		s.Write([]byte("#t"))
 	} else {
 		s.Write([]byte("#f"))
 	}
-	return nil
+	return lv + 2, nil
 }
 
 const (
@@ -94,9 +94,10 @@ func (o Integer) Eval(env *Environ) (r SchemeObject, f Frame, err error) {
 	return
 }
 
-func (o Integer) Format(s io.Writer, lv int) (err error) {
-	s.Write([]byte(strconv.FormatInt(int64(o), 10)))
-	return nil
+func (o Integer) Format(s io.Writer, lv int) (rv int, err error) {
+	rv, err = s.Write([]byte(strconv.FormatInt(int64(o), 10)))
+	rv += lv
+	return
 }
 
 func IntegerFromString(s string) (o Integer, err error) {
@@ -111,9 +112,10 @@ func (o Float) Eval(env *Environ) (r SchemeObject, f Frame, err error) {
 	return
 }
 
-func (o Float) Format(s io.Writer, lv int) (err error) {
-	s.Write([]byte(strconv.FormatFloat(float64(o), 'f', 2, 64)))
-	return nil
+func (o Float) Format(s io.Writer, lv int) (rv int, err error) {
+	rv, err = s.Write([]byte(strconv.FormatFloat(float64(o), 'f', 2, 64)))
+	rv += lv
+	return
 }
 
 func FloatFromString(s string) (o Float, err error) {
@@ -128,11 +130,12 @@ func (o String) Eval(env *Environ) (r SchemeObject, f Frame, err error) {
 	return
 }
 
-func (o String) Format(s io.Writer, lv int) (err error) {
+func (o String) Format(s io.Writer, lv int) (rv int, err error) {
 	s.Write([]byte("\""))
-	s.Write([]byte(o))
+	rv, err = s.Write([]byte(o))
 	s.Write([]byte("\""))
-	return nil
+	rv += lv + 2
+	return
 }
 
 type Cons struct {
@@ -147,65 +150,90 @@ func (o *Cons) Eval(env *Environ) (r SchemeObject, f Frame, err error) {
 	return nil, nil, nil
 }
 
-func (o *Cons) Format(s io.Writer, lv int) (err error) {
+func (o *Cons) Format(s io.Writer, lv int) (rv int, err error) {
+	var ok bool
+
 	if o.Car == nil || o.Cdr == nil {
 		_, err = s.Write([]byte("()"))
-		return
+		return lv + 2, err
 	}
 
 	anycons, err := o.anyCons()
 	if err != nil {
 		return
 	}
+	if !anycons {
+		s.Write([]byte("("))
+		rv = lv + 1
+		ok = true
+		for i := o; i != Onil; i, ok = i.Cdr.(*Cons) {
+			if !ok {
+				return rv, ErrISNotAList
+			}
+			rv, err = i.Car.Format(s, rv)
+			if err != nil {
+				return
+			}
+			rv += 1
+			if i.Cdr != Onil {
+				s.Write([]byte(" "))
+			}
+		}
+		s.Write([]byte(")"))
+		return
+	}
 
 	obj := o
 	s.Write([]byte("("))
-	obj.Car.Format(s, lv+1)
+	lv += 1
 
-	if u, ok := o.Car.(*Symbol); anycons && ok {
-		switch u.Name {
-		case "if":
-			lv += 3
-			obj, ok = obj.Cdr.(*Cons)
-			if !ok {
-				return ErrISNotAList
-			}
-			s.Write([]byte(" "))
-			obj.Car.Format(s, lv+4)
-		case "define", "lambda":
-			lv += 1
-			obj, ok = obj.Cdr.(*Cons)
-			if !ok {
-				return ErrISNotAList
-			}
-			s.Write([]byte(" "))
-			obj.Car.Format(s, lv+6)
+	if _, ok = obj.Car.(*Symbol); ok {
+		rv, err = obj.Car.Format(s, lv)
+		if err != nil {
+			return
 		}
+
+		if obj.Cdr != Onil {
+			s.Write([]byte(" "))
+			lv = rv + 1
+		}
+		obj, ok = obj.Cdr.(*Cons)
+	} else {
+		ok = true
 	}
 
-	for {
-		u, ok := obj.Cdr.(*Cons)
+	for ; ; obj, ok = obj.Cdr.(*Cons) {
 		switch {
 		case !ok:
 			s.Write([]byte(" . "))
-			obj.Car.Format(s, lv+1)
-			return
-		case ok && u == Onil:
+			lv += 3
+
+			rv, err = obj.Cdr.Format(s, lv)
+			if err != nil {
+				return
+			}
+
 			s.Write([]byte(")"))
+			rv += 1
 			return
-		default:
-			obj = u
-			if anycons {
-				s.Write([]byte("\n"))
-				for i := 0; i < lv; i++ {
-					s.Write([]byte(" "))
-				}
-			} else {
+		case obj == Onil:
+			s.Write([]byte(")"))
+			rv = lv + 1
+			return
+		}
+
+		rv, err = obj.Car.Format(s, lv)
+		if err != nil {
+			return
+		}
+		if obj.Cdr != Onil {
+			s.Write([]byte("\n"))
+			for i := 0; i < lv; i++ {
 				s.Write([]byte(" "))
 			}
-			obj.Car.Format(s, lv+1)
 		}
 	}
+
 	return
 }
 
@@ -215,7 +243,7 @@ func (o *Cons) Iter(f func(obj SchemeObject) bool) (err error) {
 		if !ok {
 			return ErrISNotAList
 		}
-		if f(i.Car) {
+		if !f(i.Car) {
 			return
 		}
 	}
@@ -243,7 +271,7 @@ func (o *Cons) GetN(n int) (r SchemeObject, err error) {
 func (o *Cons) anyCons() (yes bool, err error) {
 	err = o.Iter(func(obj SchemeObject) bool {
 		_, yes = obj.(*Cons)
-		return yes
+		return !yes
 	})
 	return
 }
