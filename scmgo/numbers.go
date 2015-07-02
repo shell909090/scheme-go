@@ -1,0 +1,5 @@
+package scmgo
+
+func Add() {
+
+}

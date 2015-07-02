@@ -6,7 +6,7 @@ import (
 )
 
 type Evalor interface {
-	Eval(env *Environ) (r SchemeObject, f Frame, err error)
+	Eval(env *Environ, p Frame) (r SchemeObject, f Frame, err error)
 }
 
 type Formatter interface {
@@ -22,7 +22,7 @@ type Symbol struct {
 	Name string
 }
 
-func (o *Symbol) Eval(env *Environ) (r SchemeObject, f Frame, err error) {
+func (o *Symbol) Eval(env *Environ, p Frame) (r SchemeObject, f Frame, err error) {
 	r, ok := env.Get(o.Name)
 	if !ok {
 		return nil, nil, ErrNameNotFound
@@ -43,7 +43,7 @@ type Quote struct {
 	objs SchemeObject
 }
 
-func (o *Quote) Eval(env *Environ) (r SchemeObject, f Frame, err error) {
+func (o *Quote) Eval(env *Environ, p Frame) (r SchemeObject, f Frame, err error) {
 	r = o.objs
 	return
 }
@@ -56,7 +56,7 @@ func (o *Quote) Format(s io.Writer, lv int) (rv int, err error) {
 
 type Boolean bool
 
-func (o Boolean) Eval(env *Environ) (r SchemeObject, f Frame, err error) {
+func (o Boolean) Eval(env *Environ, p Frame) (r SchemeObject, f Frame, err error) {
 	r = o
 	return
 }
@@ -89,7 +89,7 @@ func BooleanFromString(s string) (o Boolean, err error) {
 
 type Integer int
 
-func (o Integer) Eval(env *Environ) (r SchemeObject, f Frame, err error) {
+func (o Integer) Eval(env *Environ, p Frame) (r SchemeObject, f Frame, err error) {
 	r = o
 	return
 }
@@ -107,7 +107,7 @@ func IntegerFromString(s string) (o Integer, err error) {
 
 type Float float64
 
-func (o Float) Eval(env *Environ) (r SchemeObject, f Frame, err error) {
+func (o Float) Eval(env *Environ, p Frame) (r SchemeObject, f Frame, err error) {
 	r = o
 	return
 }
@@ -125,7 +125,7 @@ func FloatFromString(s string) (o Float, err error) {
 
 type String string
 
-func (o String) Eval(env *Environ) (r SchemeObject, f Frame, err error) {
+func (o String) Eval(env *Environ, p Frame) (r SchemeObject, f Frame, err error) {
 	r = o
 	return
 }
@@ -145,9 +145,18 @@ type Cons struct {
 
 var Onil = &Cons{}
 
-func (o *Cons) Eval(env *Environ) (r SchemeObject, f Frame, err error) {
-	// ApplyFrame()
-	return nil, nil, nil
+func (o *Cons) Eval(env *Environ, p Frame) (r SchemeObject, f Frame, err error) {
+	procedure := o.Car
+	o, ok := o.Cdr.(*Cons)
+	if !ok {
+		return nil, nil, ErrISNotAList
+	}
+
+	af := ApplyFrame(o, env)
+	af.SetParent(p)
+	f = CreateEvalFrame(procedure, env)
+	f.SetParent(af)
+	return
 }
 
 func (o *Cons) Format(s io.Writer, lv int) (rv int, err error) {
@@ -283,3 +292,18 @@ func ListFromSlice(s []SchemeObject) (o SchemeObject) {
 	}
 	return o
 }
+
+// type Function struct {
+// }
+
+// func (f *Function) IsApplicativeOrder() bool {
+// 	return true
+// }
+
+// func (f *Function) Eval(env *Environ, p Frame) (r SchemeObject, f Frame, err error) {
+
+// }
+
+// func (f *Function) Format(s io.Writer, lv int) (rv int, err error) {
+
+// }

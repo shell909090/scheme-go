@@ -3,6 +3,8 @@ package scmgo
 import (
 	"errors"
 	"io"
+
+	"github.com/op/go-logging"
 )
 
 var (
@@ -19,14 +21,41 @@ var (
 	ErrNameNotFound        = errors.New("name not found")
 )
 
+var (
+	log = logging.MustGetLogger("scmgo")
+)
+
 func Trampoline(init_frame Frame, init_obj SchemeObject) (result SchemeObject, err error) {
+	var name string
 	f := init_frame
 	result = init_obj
 	for f != nil {
-		result, f, err = f.Exec(result)
+		name, err = f.Debug()
 		if err != nil {
 			return
 		}
+		log.Debug("result: %v, frame: %s %v.", result, name, f)
+
+		result, f, err = f.Exec(result)
+		if err != nil {
+			log.Error("%s", err)
+			return
+		}
+	}
+	return
+}
+
+func RunCode(code SchemeObject) (result SchemeObject, err error) {
+	progn, ok := code.(*Cons)
+	if !ok {
+		return nil, ErrRuntimeType
+	}
+	env := &Environ{Parent: nil, Names: make(map[string]SchemeObject)}
+	init_frame := CreatePrognFrame(progn, env)
+
+	result, err = Trampoline(init_frame, nil)
+	if result == nil {
+		return nil, ErrRuntimeUnknown
 	}
 	return
 }
