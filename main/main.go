@@ -8,6 +8,7 @@ import (
 	_ "bitbucket.org/shell909090/scheme-go/internal"
 	"bitbucket.org/shell909090/scheme-go/parser"
 	"bitbucket.org/shell909090/scheme-go/scmgo"
+	"bitbucket.org/shell909090/scheme-go/translator"
 	"github.com/op/go-logging"
 )
 
@@ -16,6 +17,8 @@ var log = logging.MustGetLogger("")
 var (
 	LogFile  string
 	LogLevel string
+	Parse    bool
+	Trans    bool
 )
 
 func SetLogging() (err error) {
@@ -43,11 +46,57 @@ func SetLogging() (err error) {
 	return
 }
 
+func parse() (code scmgo.SchemeObject, err error) {
+	file, err := os.Open(flag.Args()[0])
+	if err != nil {
+		log.Error("%s", err)
+		return
+	}
+	defer file.Close()
+
+	code, err = parser.SourceToAST(file)
+	if err != nil {
+		log.Error("%s", err)
+		return
+	}
+
+	code.Format(os.Stdout, 0)
+	os.Stdout.Write([]byte("\n"))
+	return
+}
+
+func translate(src scmgo.SchemeObject) (code scmgo.SchemeObject, err error) {
+	code, err = translator.Translate(src)
+	if err != nil {
+		log.Error("%s", err)
+		return
+	}
+
+	os.Stdout.Write([]byte("-------translate-------\n"))
+	code.Format(os.Stdout, 0)
+	os.Stdout.Write([]byte("\n"))
+	return
+}
+
+func run(code scmgo.SchemeObject) (result scmgo.SchemeObject, err error) {
+	os.Stdout.Write([]byte("-------runtime-------\n"))
+	result, err = scmgo.RunCode(code)
+	if err != nil {
+		log.Error("%s", err)
+		return
+	}
+	os.Stdout.Write([]byte("-------output-------\n"))
+
+	result.Format(os.Stdout, 0)
+	os.Stdout.Write([]byte("\n"))
+	return
+}
+
 func main() {
-	var parse bool
 	flag.StringVar(&LogLevel, "loglevel", "INFO", "loglevel")
 	flag.StringVar(&LogFile, "logfile", "", "logfile")
-	flag.BoolVar(&parse, "parse", false, "just parse, not run")
+	flag.BoolVar(&Parse, "parse", false, "just parse, not run")
+	flag.BoolVar(&Trans, "translate", false, "just parse and translate, not run")
 
 	flag.Parse()
 	if len(flag.Args()) < 1 {
@@ -59,34 +108,23 @@ func main() {
 		panic(err)
 	}
 
-	file, err := os.Open(flag.Args()[0])
+	code, err := parse()
 	if err != nil {
 		log.Error("%s", err)
 		return
 	}
-	defer file.Close()
+	if Parse {
+		return
+	}
 
-	code, err := parser.SourceToAST(file)
+	code, err = translate(code)
 	if err != nil {
 		log.Error("%s", err)
 		return
 	}
-
-	code.Format(os.Stdout, 0)
-	os.Stdout.Write([]byte("\n"))
-
-	if parse {
+	if Trans {
 		return
 	}
 
-	os.Stdout.Write([]byte("-------runtime-------\n"))
-	result, err := scmgo.RunCode(code)
-	if err != nil {
-		log.Error("%s", err)
-		return
-	}
-	os.Stdout.Write([]byte("-------output-------\n"))
-
-	result.Format(os.Stdout, 0)
-	os.Stdout.Write([]byte("\n"))
+	run(code)
 }
