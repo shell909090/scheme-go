@@ -50,3 +50,18 @@ func StackFormatter(f Frame) (r string) {
 	}
 	return buf.String()
 }
+
+func EvalMaybeInFrame(p Frame, i SchemeObject, e *Environ) (r SchemeObject, next Frame, err error) {
+	_, ok := i.(*Cons)
+	if ok {
+		next = CreateEvalFrame(p, i, e)
+		return
+	}
+
+	r, next, err = i.Eval(e, p)
+	if next != nil {
+		log.Error("fast run a object but not return")
+		return nil, nil, ErrUnknown
+	}
+	return
+}

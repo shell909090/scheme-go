@@ -73,19 +73,33 @@ func (pf *PrognFrame) GetEnv() (e *Environ) {
 func (pf *PrognFrame) Eval(i SchemeObject) (r SchemeObject, next Frame, err error) {
 	var obj SchemeObject
 
-	switch {
-	case pf.Obj == Onil:
-		return Onil, pf.Parent, nil
-	case pf.Obj.Cdr == Onil: // jump
-		obj := pf.Obj.Car
-		next = CreateEvalFrame(pf.Parent, obj, pf.Env)
-	default:
-		obj, pf.Obj, err = pf.Obj.Pop()
-		if err != nil {
-			return
-		}
+	for {
 
-		next = CreateEvalFrame(pf, obj, pf.Env)
+		switch {
+		case pf.Obj == Onil:
+			return Onil, pf.Parent, nil
+		case pf.Obj.Cdr == Onil: // jump
+			obj := pf.Obj.Car
+
+			r, next, err = EvalMaybeInFrame(pf.Parent, obj, pf.Env)
+			if err != nil {
+				return
+			}
+			if next == nil {
+				next = pf.Parent
+			}
+			return
+		default:
+			obj, pf.Obj, err = pf.Obj.Pop()
+			if err != nil {
+				return
+			}
+
+			_, next, err = EvalMaybeInFrame(pf, obj, pf.Env)
+			if err != nil || next != nil {
+				return
+			}
+		}
 	}
 	return
 }
@@ -157,18 +171,28 @@ func (af *ApplyFrame) Eval(i SchemeObject) (r SchemeObject, next Frame, err erro
 		af.AppendEvaled(i)
 	}
 
-	if af.Args == Onil { // all args has been evaled
-		r, next, err = af.Apply(af.EvaledArgs)
-		return
-	}
+	for {
+		if af.Args == Onil { // all args has been evaled
+			r, next, err = af.Apply(af.EvaledArgs)
+			return
+		}
 
-	// eval next argument
-	obj, af.Args, err = af.Args.Pop()
-	if err != nil {
-		return
-	}
+		// pop up next argument
+		obj, af.Args, err = af.Args.Pop()
+		if err != nil {
+			return
+		}
 
-	next = CreateEvalFrame(af, obj, af.Env)
+		r, next, err = EvalMaybeInFrame(af, obj, af.Env)
+		if err != nil {
+			return
+		}
+		if next != nil { // if had to call next frame, quit to call
+			return
+		} // otherwise, append to evaled args, and run next.
+
+		af.AppendEvaled(r)
+	}
 	return
 }
 
