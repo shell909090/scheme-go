@@ -50,8 +50,8 @@ func Trampoline(init_frame Frame, init_obj SchemeObject) (result SchemeObject, e
 	f := init_frame
 	result = init_obj
 	for f != nil {
-		// log.Debug("frame: %s, result: %s.",
-		// 	f.Debug(), SchemeObjectToString(result))
+		log.Debug("frame: %s, result: %s.",
+			f.Debug(), SchemeObjectToString(result))
 
 		result, f, err = f.Exec(result)
 		if err != nil {

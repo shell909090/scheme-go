@@ -28,7 +28,7 @@ func ObjToFloat(i SchemeObject) (f float64) {
 	return
 }
 
-func IsNumber(o *Cons, p *ApplyFrame) (r SchemeObject, next Frame, err error) {
+func IsNumber(o *Cons, p Frame) (r SchemeObject, next Frame, err error) {
 	n, err := o.Len()
 	if err != nil {
 		return
@@ -43,7 +43,7 @@ func IsNumber(o *Cons, p *ApplyFrame) (r SchemeObject, next Frame, err error) {
 	return Ofalse, nil, nil
 }
 
-func IsInteger(o *Cons, p *ApplyFrame) (r SchemeObject, next Frame, err error) {
+func IsInteger(o *Cons, p Frame) (r SchemeObject, next Frame, err error) {
 	n, err := o.Len()
 	if err != nil {
 		return
@@ -58,7 +58,7 @@ func IsInteger(o *Cons, p *ApplyFrame) (r SchemeObject, next Frame, err error) {
 	return Ofalse, nil, nil
 }
 
-func Add(o *Cons, p *ApplyFrame) (r SchemeObject, next Frame, err error) {
+func Add(o *Cons, p Frame) (r SchemeObject, next Frame, err error) {
 	f, err := anyFloat(o)
 	if err != nil {
 		return
@@ -88,7 +88,7 @@ func Add(o *Cons, p *ApplyFrame) (r SchemeObject, next Frame, err error) {
 	return
 }
 
-func Dec(o *Cons, p *ApplyFrame) (r SchemeObject, next Frame, err error) {
+func Dec(o *Cons, p Frame) (r SchemeObject, next Frame, err error) {
 	var t SchemeObject
 	f, err := anyFloat(o)
 	if err != nil {
@@ -130,7 +130,7 @@ func Dec(o *Cons, p *ApplyFrame) (r SchemeObject, next Frame, err error) {
 	return
 }
 
-func Mul(o *Cons, p *ApplyFrame) (r SchemeObject, next Frame, err error) {
+func Mul(o *Cons, p Frame) (r SchemeObject, next Frame, err error) {
 	var t SchemeObject
 	f, err := anyFloat(o)
 	if err != nil {
@@ -171,7 +171,7 @@ func Mul(o *Cons, p *ApplyFrame) (r SchemeObject, next Frame, err error) {
 	return
 }
 
-func Div(o *Cons, p *ApplyFrame) (r SchemeObject, next Frame, err error) {
+func Div(o *Cons, p Frame) (r SchemeObject, next Frame, err error) {
 	var t SchemeObject
 	t, o, err = o.Pop()
 	if err != nil {

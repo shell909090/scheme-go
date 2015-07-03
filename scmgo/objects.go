@@ -9,11 +9,6 @@ type Evalor interface {
 	Eval(env *Environ, p Frame) (r SchemeObject, next Frame, err error)
 }
 
-type Procedure interface {
-	IsApplicativeOrder() bool
-	Apply(o *Cons, p *ApplyFrame) (r SchemeObject, next Frame, err error)
-}
-
 type Formatter interface {
 	Format(s io.Writer, lv int) (rv int, err error)
 }

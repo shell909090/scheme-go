@@ -4,7 +4,6 @@ import "fmt"
 
 type Frame interface {
 	Debug() (r string)
-	SetParent(p Frame)
 	GetEnv() (e *Environ)
 	Exec(i SchemeObject) (r SchemeObject, next Frame, err error)
 }
@@ -21,10 +20,6 @@ func CreateEvalFrame(p Frame, o SchemeObject, e *Environ) (f Frame) {
 
 func (ef *EvalFrame) Debug() (r string) {
 	return fmt.Sprintf("EvalFrame: {%s}", SchemeObjectToString(ef.Obj))
-}
-
-func (ef *EvalFrame) SetParent(p Frame) {
-	ef.Parent = p
 }
 
 func (ef *EvalFrame) GetEnv() (e *Environ) {
@@ -51,10 +46,6 @@ func CreatePrognFrame(p Frame, o *Cons, e *Environ) (f Frame) {
 
 func (pf *PrognFrame) Debug() (r string) {
 	return "PrognFrame"
-}
-
-func (pf *PrognFrame) SetParent(p Frame) {
-	pf.Parent = p
 }
 
 func (pf *PrognFrame) GetEnv() (e *Environ) {
@@ -98,10 +89,6 @@ func (af *ApplyFrame) Debug() (r string) {
 	return "ApplyFrame"
 }
 
-func (af *ApplyFrame) SetParent(p Frame) {
-	af.Parent = p
-}
-
 func (af *ApplyFrame) GetEnv() (e *Environ) {
 	return af.Env
 }
@@ -117,8 +104,15 @@ func (af *ApplyFrame) Exec(i SchemeObject) (r SchemeObject, next Frame, err erro
 			return nil, nil, ErrNotRunnable
 		}
 
-		if !af.P.IsApplicativeOrder() {
-			// TODO: normal order
+		if !af.P.IsApplicativeOrder() { // normal order
+			r, next, err = af.P.Apply(af.Args, af.Parent)
+			if err != nil {
+				log.Error("%s", err)
+				return
+			}
+			if next == nil {
+				next = af.Parent
+			}
 			return
 		}
 
@@ -135,7 +129,7 @@ func (af *ApplyFrame) Exec(i SchemeObject) (r SchemeObject, next Frame, err erro
 	}
 
 	if af.Args == Onil { // all args has been evaled
-		r, next, err = af.P.Apply(af.EvaledArgs, af)
+		r, next, err = af.P.Apply(af.EvaledArgs, af.Parent)
 		if err != nil {
 			log.Error("%s", err)
 			return

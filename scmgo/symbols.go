@@ -1,24 +1,5 @@
 package scmgo
 
-// symbol? string?
-
-// define lambda
-// begin compile
-// eval apply
-
-// user-init-environment
-// current-environment
-// import
-
-// let let*
-// eq? equal?
-// not and or
-// cond if when
-
-// display error
-// newline
-// exit
-
 func Lambda(o *Cons, p Frame) (r SchemeObject, next Frame, err error) {
 	t, o, err := o.Pop()
 	if err != nil {
@@ -36,4 +17,26 @@ func Lambda(o *Cons, p Frame) (r SchemeObject, next Frame, err error) {
 		Obj:  o,
 	}
 	return
+}
+
+func init() {
+	// symbol? string?
+
+	// define lambda
+	RegisterInternalProcedure("lambda", Lambda, false)
+	// begin compile
+	// eval apply
+
+	// user-init-environment
+	// current-environment
+	// import
+
+	// let let*
+	// eq? equal?
+	// not and or
+	// cond if when
+
+	// display error
+	// newline
+	// exit
 }

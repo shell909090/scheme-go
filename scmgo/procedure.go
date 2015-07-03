@@ -5,13 +5,18 @@ import (
 	"io"
 )
 
+type Procedure interface {
+	IsApplicativeOrder() bool
+	Apply(o *Cons, p Frame) (r SchemeObject, next Frame, err error)
+}
+
 type InternalProcedure struct {
 	Name        string
-	f           func(i *Cons, p *ApplyFrame) (r SchemeObject, next Frame, err error)
+	f           func(i *Cons, p Frame) (r SchemeObject, next Frame, err error)
 	applicative bool
 }
 
-func RegisterInternalProcedure(name string, f func(o *Cons, p *ApplyFrame) (r SchemeObject, next Frame, err error), applicative bool) {
+func RegisterInternalProcedure(name string, f func(o *Cons, p Frame) (r SchemeObject, next Frame, err error), applicative bool) {
 	DefaultNames[name] = &InternalProcedure{Name: name, f: f, applicative: applicative}
 }
 
@@ -23,7 +28,7 @@ func (ip *InternalProcedure) Eval(env *Environ, p Frame) (r SchemeObject, next F
 	panic("run eval of internal procedure")
 }
 
-func (ip *InternalProcedure) Apply(o *Cons, p *ApplyFrame) (r SchemeObject, next Frame, err error) {
+func (ip *InternalProcedure) Apply(o *Cons, p Frame) (r SchemeObject, next Frame, err error) {
 	log.Debug("apply %s %s", ip.Name, SchemeObjectToString(o))
 	r, next, err = ip.f(o, p)
 	log.Debug("result %s", SchemeObjectToString(r))
@@ -101,12 +106,12 @@ func (lp *LambdaProcedure) GenNames(o *Cons) (r map[string]SchemeObject, err err
 	return
 }
 
-func (lp *LambdaProcedure) Apply(o *Cons, p *ApplyFrame) (r SchemeObject, next Frame, err error) {
+func (lp *LambdaProcedure) Apply(o *Cons, p Frame) (r SchemeObject, next Frame, err error) {
 	names, err := lp.GenNames(o)
 	if err != nil {
 		return
 	}
-	next = CreatePrognFrame(p.Parent, lp.Obj, lp.Env.Fork(names))
+	next = CreatePrognFrame(p, lp.Obj, lp.Env.Fork(names))
 	return
 }
 
