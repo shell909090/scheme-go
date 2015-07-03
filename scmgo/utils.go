@@ -3,7 +3,6 @@ package scmgo
 import (
 	"bytes"
 	"errors"
-	"io"
 
 	logging "github.com/op/go-logging"
 )
@@ -32,6 +31,14 @@ var (
 	DefaultNames = make(map[string]SchemeObject)
 )
 
+func GetHeadAsSymbol(o *Cons) (s *Symbol, err error) {
+	s, ok := o.Car.(*Symbol)
+	if !ok {
+		return nil, ErrType
+	}
+	return
+}
+
 func SchemeObjectToString(o SchemeObject) (s string) {
 	if o == nil {
 		return ""
@@ -46,44 +53,10 @@ func SchemeObjectToString(o SchemeObject) (s string) {
 	return buf.String()
 }
 
-func Trampoline(init_frame Frame, init_obj SchemeObject) (result SchemeObject, err error) {
-	f := init_frame
-	result = init_obj
-	for f != nil {
-		log.Debug("frame: %s, result: %s.",
-			f.Debug(), SchemeObjectToString(result))
-
-		result, f, err = f.Exec(result)
-		if err != nil {
-			log.Error("%s", err)
-			return
-		}
+func StackFormatter(f Frame) (r string) {
+	buf := bytes.NewBuffer(nil)
+	for c := f; c != nil; c = c.GetParent() {
+		buf.WriteString(c.Format() + "\n")
 	}
-	return
-}
-
-func RunCode(code SchemeObject) (result SchemeObject, err error) {
-	progn, ok := code.(*Cons)
-	if !ok {
-		return nil, ErrType
-	}
-	env := &Environ{Parent: nil, Names: DefaultNames}
-	init_frame := CreatePrognFrame(nil, progn, env)
-
-	result, err = Trampoline(init_frame, nil)
-	if result == nil {
-		return nil, ErrUnknown
-	}
-	return
-}
-
-func BuildCode(source io.ReadCloser) (code SchemeObject, err error) {
-	cpipe := make(chan string)
-	go GrammarParser(source, cpipe)
-
-	// for chunk, ok := <-cpipe; ok; chunk, ok = <-cpipe {
-	// 	fmt.Println("chunk:", string(chunk))
-	// }
-	// return nil, nil
-	return CodeParser(cpipe)
+	return buf.String()
 }

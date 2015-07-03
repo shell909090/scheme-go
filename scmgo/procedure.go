@@ -29,9 +29,9 @@ func (ip *InternalProcedure) Eval(env *Environ, p Frame) (r SchemeObject, next F
 }
 
 func (ip *InternalProcedure) Apply(o *Cons, p Frame) (r SchemeObject, next Frame, err error) {
-	log.Debug("apply %s %s", ip.Name, SchemeObjectToString(o))
+	log.Info("apply %s %s", ip.Name, SchemeObjectToString(o))
 	r, next, err = ip.f(o, p)
-	log.Debug("result %s", SchemeObjectToString(r))
+	log.Info("result %s", SchemeObjectToString(r))
 	return
 }
 
@@ -55,14 +55,6 @@ func (lp *LambdaProcedure) IsApplicativeOrder() bool {
 
 func (lp *LambdaProcedure) Eval(env *Environ, p Frame) (r SchemeObject, next Frame, err error) {
 	panic("run eval of lambda procedure")
-}
-
-func GetHeadAsSymbol(o *Cons) (s *Symbol, err error) {
-	s, ok := o.Car.(*Symbol)
-	if !ok {
-		return nil, ErrType
-	}
-	return
 }
 
 func (lp *LambdaProcedure) GenNames(o *Cons) (r map[string]SchemeObject, err error) {
@@ -111,7 +103,8 @@ func (lp *LambdaProcedure) Apply(o *Cons, p Frame) (r SchemeObject, next Frame, 
 	if err != nil {
 		return
 	}
-	next = CreatePrognFrame(p, lp.Obj, lp.Env.Fork(names))
+	// this is called by apply frame, so pass this frame
+	next = CreatePrognFrame(p.GetParent(), lp.Obj, lp.Env.Fork(names))
 	return
 }
 

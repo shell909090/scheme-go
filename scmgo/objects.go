@@ -23,8 +23,8 @@ type Symbol struct {
 }
 
 func (o *Symbol) Eval(env *Environ, p Frame) (r SchemeObject, next Frame, err error) {
-	r, ok := env.Get(o.Name)
-	if !ok {
+	r = env.Get(o.Name)
+	if r == nil {
 		return nil, nil, ErrNameNotFound
 	}
 	return
@@ -33,10 +33,6 @@ func (o *Symbol) Eval(env *Environ, p Frame) (r SchemeObject, next Frame, err er
 func (o *Symbol) Format(s io.Writer, lv int) (rv int, err error) {
 	s.Write([]byte(o.Name))
 	return lv + len(o.Name), nil
-}
-
-func SymbolFromString(s string) (o *Symbol) {
-	return &Symbol{Name: s}
 }
 
 type Quote struct {
@@ -75,18 +71,6 @@ const (
 	Ofalse = Boolean(false)
 )
 
-func BooleanFromString(s string) (o Boolean, err error) {
-	// FIXME: not so good
-	switch s[1] {
-	case 't':
-		return Otrue, nil
-	case 'f':
-		return Ofalse, nil
-	default:
-		return Otrue, ErrBooleanUnknown
-	}
-}
-
 type Integer int
 
 func (o Integer) Eval(env *Environ, p Frame) (r SchemeObject, next Frame, err error) {
@@ -100,11 +84,6 @@ func (o Integer) Format(s io.Writer, lv int) (rv int, err error) {
 	return
 }
 
-func IntegerFromString(s string) (o Integer, err error) {
-	i, err := strconv.Atoi(s)
-	return Integer(i), err
-}
-
 type Float float64
 
 func (o Float) Eval(env *Environ, p Frame) (r SchemeObject, next Frame, err error) {
@@ -116,11 +95,6 @@ func (o Float) Format(s io.Writer, lv int) (rv int, err error) {
 	rv, err = s.Write([]byte(strconv.FormatFloat(float64(o), 'f', 2, 64)))
 	rv += lv
 	return
-}
-
-func FloatFromString(s string) (o Float, err error) {
-	i, err := strconv.ParseFloat(s, 64)
-	return Float(i), err
 }
 
 type String string
@@ -306,12 +280,4 @@ func (o *Cons) anyCons() (yes bool, err error) {
 		err = nil
 	}
 	return
-}
-
-func ListFromSlice(s []SchemeObject) (o SchemeObject) {
-	o = Onil
-	for i := len(s) - 1; i >= 0; i-- {
-		o = &Cons{Car: s[i], Cdr: o}
-	}
-	return o
 }

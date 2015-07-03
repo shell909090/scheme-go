@@ -62,13 +62,14 @@ func main() {
 
 	code.Format(os.Stdout, 0)
 	os.Stdout.Write([]byte("\n"))
-	os.Stdout.Write([]byte("-------output-------\n"))
 
+	os.Stdout.Write([]byte("-------runtime-------\n"))
 	result, err := scmgo.RunCode(code)
 	if err != nil {
 		log.Error("%s", err)
 		return
 	}
+	os.Stdout.Write([]byte("-------output-------\n"))
 
 	result.Format(os.Stdout, 0)
 	os.Stdout.Write([]byte("\n"))

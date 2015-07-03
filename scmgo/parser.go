@@ -1,14 +1,35 @@
 package scmgo
 
-import "strings"
+import (
+	"strconv"
+	"strings"
+)
 
-const control_chars = "()' \n\r\t"
+// control_chars
+// ()' \n\r\t
+
+func BooleanFromString(s string) (o Boolean, err error) {
+	if len(s) != 2 || s[0] != '#' {
+		return Ofalse, ErrBooleanUnknown
+	}
+	switch s[1] {
+	case 't':
+		return Otrue, nil
+	case 'f':
+		return Ofalse, nil
+	}
+	return Ofalse, ErrBooleanUnknown
+}
 
 func CodeNumber(chunk string) (obj SchemeObject, err error) {
 	if strings.Index(chunk, ".") != -1 {
-		obj, err = FloatFromString(chunk)
+		var i float64
+		i, err = strconv.ParseFloat(chunk, 64)
+		obj = Float(i)
 	} else {
-		obj, err = IntegerFromString(chunk)
+		var i int
+		i, err = strconv.Atoi(chunk)
+		obj = Integer(i)
 	}
 	return
 }
@@ -30,7 +51,7 @@ QUIT:
 		case '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
 			if chunk[0] == '-' && len(chunk) == 1 {
 				// - without number is symbol
-				obj = SymbolFromString(chunk)
+				obj = &Symbol{Name: chunk}
 			} else { // Integer & Float
 				obj, err = CodeNumber(chunk)
 				if err != nil {
@@ -49,7 +70,7 @@ QUIT:
 		case ')': // return Cons
 			break QUIT
 		default: // Symbol
-			obj = SymbolFromString(chunk)
+			obj = &Symbol{Name: chunk}
 		}
 
 		if obj == nil { // pass comment
@@ -76,4 +97,12 @@ QUIT:
 	}
 
 	return ListFromSlice(objs), nil
+}
+
+func ListFromSlice(s []SchemeObject) (o SchemeObject) {
+	o = Onil
+	for i := len(s) - 1; i >= 0; i-- {
+		o = &Cons{Car: s[i], Cdr: o}
+	}
+	return o
 }
