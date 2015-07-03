@@ -1,7 +1,5 @@
 package scmgo
 
-import "io"
-
 func StepDebuger(f Frame, r SchemeObject) {
 	if r != nil {
 		log.Debug("result: %s", SchemeObjectToString(r))
@@ -37,17 +35,4 @@ func RunCode(code SchemeObject) (result SchemeObject, err error) {
 		return nil, ErrUnknown
 	}
 	return
-}
-
-func BuildCode(source io.ReadCloser) (code SchemeObject, err error) {
-	cpipe := make(chan string)
-	go func() {
-		err = GrammarParser(source, cpipe)
-	}()
-	// for chunk, ok := <-cpipe; ok; chunk, ok = <-cpipe {
-	// 	fmt.Println("chunk:", string(chunk))
-	// }
-	// return nil, nil
-
-	return CodeParser(cpipe)
 }

@@ -1,42 +1,44 @@
-package scmgo
+package parser
 
 import (
 	"strconv"
 	"strings"
+
+	"bitbucket.org/shell909090/scheme-go/scmgo"
 )
 
 // control_chars
 // ()' \n\r\t
 
-func BooleanFromString(s string) (o Boolean, err error) {
+func BooleanFromString(s string) (o scmgo.Boolean, err error) {
 	if len(s) != 2 || s[0] != '#' {
-		return Ofalse, ErrBooleanUnknown
+		return scmgo.Ofalse, ErrBooleanUnknown
 	}
 	switch s[1] {
 	case 't':
-		return Otrue, nil
+		return scmgo.Otrue, nil
 	case 'f':
-		return Ofalse, nil
+		return scmgo.Ofalse, nil
 	}
-	return Ofalse, ErrBooleanUnknown
+	return scmgo.Ofalse, ErrBooleanUnknown
 }
 
-func CodeNumber(chunk string) (obj SchemeObject, err error) {
+func CodeNumber(chunk string) (obj scmgo.SchemeObject, err error) {
 	if strings.Index(chunk, ".") != -1 {
 		var i float64
 		i, err = strconv.ParseFloat(chunk, 64)
-		obj = Float(i)
+		obj = scmgo.Float(i)
 	} else {
 		var i int
 		i, err = strconv.Atoi(chunk)
-		obj = Integer(i)
+		obj = scmgo.Integer(i)
 	}
 	return
 }
 
-func CodeParser(cin chan string) (code SchemeObject, err error) {
-	var obj SchemeObject
-	var objs []SchemeObject
+func CodeParser(cin chan string) (code scmgo.SchemeObject, err error) {
+	var obj scmgo.SchemeObject
+	var objs []scmgo.SchemeObject
 
 QUIT:
 	for chunk, ok := <-cin; ok; chunk, ok = <-cin {
@@ -47,11 +49,11 @@ QUIT:
 				return
 			}
 		case '"': // String
-			obj = String(chunk[1 : len(chunk)-1])
+			obj = scmgo.String(chunk[1 : len(chunk)-1])
 		case '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
 			if chunk[0] == '-' && len(chunk) == 1 {
 				// - without number is symbol
-				obj = &Symbol{Name: chunk}
+				obj = &scmgo.Symbol{Name: chunk}
 			} else { // Integer & Float
 				obj, err = CodeNumber(chunk)
 				if err != nil {
@@ -59,7 +61,7 @@ QUIT:
 				}
 			}
 		case '\'': // Quote
-			obj = new(Quote)
+			obj = new(scmgo.Quote)
 		case ';': // Comment
 			obj = nil
 		case '(': // Cons
@@ -70,7 +72,7 @@ QUIT:
 		case ')': // return Cons
 			break QUIT
 		default: // Symbol
-			obj = &Symbol{Name: chunk}
+			obj = &scmgo.Symbol{Name: chunk}
 		}
 
 		if obj == nil { // pass comment
@@ -80,8 +82,8 @@ QUIT:
 		// processing Quote
 		if len(objs) > 0 {
 			o := objs[len(objs)-1]
-			if last, ok := o.(*Quote); ok {
-				last.objs = obj
+			if last, ok := o.(*scmgo.Quote); ok {
+				last.Objs = obj
 				continue
 			}
 		}
@@ -91,7 +93,7 @@ QUIT:
 
 	if len(objs) > 0 {
 		o := objs[len(objs)-1]
-		if last, ok := o.(*Quote); ok && last.objs == nil {
+		if last, ok := o.(*scmgo.Quote); ok && last.Objs == nil {
 			return code, ErrQuoteInEnd
 		}
 	}
@@ -99,10 +101,10 @@ QUIT:
 	return ListFromSlice(objs), nil
 }
 
-func ListFromSlice(s []SchemeObject) (o SchemeObject) {
-	o = Onil
+func ListFromSlice(s []scmgo.SchemeObject) (o scmgo.SchemeObject) {
+	o = scmgo.Onil
 	for i := len(s) - 1; i >= 0; i-- {
-		o = &Cons{Car: s[i], Cdr: o}
+		o = &scmgo.Cons{Car: s[i], Cdr: o}
 	}
 	return o
 }

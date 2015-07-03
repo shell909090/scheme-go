@@ -11,4 +11,7 @@ build:
 	mkdir -p bin
 	go build -o bin/scheme-go bitbucket.org/shell909090/scheme-go/main
 
+clean:
+	rm -rf bin
+
 ### Makefile ends here

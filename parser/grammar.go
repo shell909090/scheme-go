@@ -1,4 +1,4 @@
-package scmgo
+package parser
 
 import (
 	"bufio"

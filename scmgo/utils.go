@@ -8,15 +8,6 @@ import (
 )
 
 var (
-	ErrQuotaNotClose       = errors.New("quote not closed")
-	ErrQuotaInSymbol       = errors.New("quote in symbol")
-	ErrCommentInSymbol     = errors.New("comment in symbol")
-	ErrParenthesisNotClose = errors.New("parenthesis not close")
-	ErrBooleanUnknown      = errors.New("unknown boolean")
-	ErrQuoteInEnd          = errors.New("quote in the end of S-Expression")
-)
-
-var (
 	ErrListOutOfIndex = errors.New("out of index when get list")
 	ErrType           = errors.New("runtime type error")
 	ErrISNotAList     = errors.New("object is not a list")

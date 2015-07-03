@@ -36,17 +36,17 @@ func (o *Symbol) Format(s io.Writer, lv int) (rv int, err error) {
 }
 
 type Quote struct {
-	objs SchemeObject
+	Objs SchemeObject
 }
 
 func (o *Quote) Eval(env *Environ, p Frame) (r SchemeObject, next Frame, err error) {
-	r = o.objs
+	r = o.Objs
 	return
 }
 
 func (o *Quote) Format(s io.Writer, lv int) (rv int, err error) {
 	s.Write([]byte("'"))
-	rv, err = o.objs.Format(s, lv+1)
+	rv, err = o.Objs.Format(s, lv+1)
 	return
 }
 

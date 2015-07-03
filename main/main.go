@@ -5,6 +5,7 @@ import (
 	stdlog "log"
 	"os"
 
+	"bitbucket.org/shell909090/scheme-go/parser"
 	"bitbucket.org/shell909090/scheme-go/scmgo"
 	"github.com/op/go-logging"
 )
@@ -27,7 +28,7 @@ func SetLogging() (err error) {
 
 	logging.SetFormatter(logging.MustStringFormatter("%{level}: %{message}"))
 
-	lv, err := logging.LogLevel("DEBUG")
+	lv, err := logging.LogLevel("ERROR")
 	if err != nil {
 		panic(err.Error())
 	}
@@ -54,7 +55,7 @@ func main() {
 	}
 	defer file.Close()
 
-	code, err := scmgo.BuildCode(file)
+	code, err := parser.SourceToAST(file)
 	if err != nil {
 		log.Error("%s", err)
 		return
