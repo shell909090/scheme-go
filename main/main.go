@@ -13,23 +13,28 @@ import (
 
 var log = logging.MustGetLogger("")
 
+var (
+	LogFile  string
+	LogLevel string
+)
+
 func SetLogging() (err error) {
 	var file *os.File
 	file = os.Stdout
 
-	// if cfg.Logfile != "" {
-	// 	file, err = os.OpenFile(cfg.Logfile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
-	// 	if err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// }
+	if LogFile != "" {
+		file, err = os.OpenFile(LogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 	logBackend := logging.NewLogBackend(file, "",
 		stdlog.LstdFlags|stdlog.Lmicroseconds|stdlog.Lshortfile)
 	logging.SetBackend(logBackend)
 
 	logging.SetFormatter(logging.MustStringFormatter("%{level}: %{message}"))
 
-	lv, err := logging.LogLevel("ERROR")
+	lv, err := logging.LogLevel(LogLevel)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -39,6 +44,11 @@ func SetLogging() (err error) {
 }
 
 func main() {
+	var parse bool
+	flag.StringVar(&LogLevel, "loglevel", "INFO", "loglevel")
+	flag.StringVar(&LogFile, "logfile", "", "logfile")
+	flag.BoolVar(&parse, "parse", false, "just parse, not run")
+
 	flag.Parse()
 	if len(flag.Args()) < 1 {
 		panic("parameters not enough")
@@ -64,6 +74,10 @@ func main() {
 
 	code.Format(os.Stdout, 0)
 	os.Stdout.Write([]byte("\n"))
+
+	if parse {
+		return
+	}
 
 	os.Stdout.Write([]byte("-------runtime-------\n"))
 	result, err := scmgo.RunCode(code)
