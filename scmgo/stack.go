@@ -37,6 +37,10 @@ func (ef *EvalFrame) Eval(i SchemeObject) (r SchemeObject, next Frame, err error
 	if next == nil {
 		next = ef.Parent
 	}
+	if err != nil {
+		log.Error("%s", err)
+		return
+	}
 	return
 }
 
@@ -51,7 +55,11 @@ func CreatePrognFrame(p Frame, o *Cons, e *Environ) (f Frame) {
 }
 
 func (pf *PrognFrame) Format() (r string) {
-	return "Progn"
+	n, err := pf.Obj.Len()
+	if err != nil {
+		n = 0
+	}
+	return fmt.Sprintf("Progn: %d", n)
 }
 
 func (pf *PrognFrame) GetParent() (f Frame) {
@@ -175,7 +183,7 @@ func CreateCondFrame(p Frame, o *Cons, e *Environ) (f Frame) {
 }
 
 func (cf *CondFrame) Format() (r string) {
-	return fmt.Sprintf("Cond: {%s}", SchemeObjectToString(cf.Obj))
+	return fmt.Sprintf("Cond:\n%s", SchemeObjectToString(cf.Obj))
 }
 
 func (cf *CondFrame) GetParent() (f Frame) {
@@ -220,6 +228,7 @@ func (cf *CondFrame) Eval(i SchemeObject) (r SchemeObject, next Frame, err error
 	}
 
 	t = cf.Obj.Car
+
 	cond, ok = t.(*Cons)
 	if !ok {
 		return nil, nil, ErrType
@@ -227,11 +236,13 @@ func (cf *CondFrame) Eval(i SchemeObject) (r SchemeObject, next Frame, err error
 
 	t = cond.Car
 	if n, ok := t.(*Symbol); ok && n.Name == "else" {
+		log.Debug("hit else")
 		t, err = cond.GetN(1)
 		if err != nil {
 			return
 		}
 		next = CreateEvalFrame(cf.Parent, t, cf.Env)
+		return
 	}
 	next = CreateEvalFrame(cf, t, cf.Env)
 	return
