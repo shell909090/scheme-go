@@ -5,12 +5,8 @@ import "fmt"
 type Frame interface {
 	Debug() (r string)
 	SetParent(p Frame)
+	GetEnv() (e *Environ)
 	Exec(i SchemeObject) (r SchemeObject, next Frame, err error)
-}
-
-type Procedure interface {
-	IsApplicativeOrder() bool
-	Apply(i SchemeObject, p Frame) (r SchemeObject, next Frame, err error)
 }
 
 type EvalFrame struct {
@@ -19,8 +15,8 @@ type EvalFrame struct {
 	Env    *Environ
 }
 
-func CreateEvalFrame(o SchemeObject, e *Environ) (f Frame) {
-	return &EvalFrame{Obj: o, Env: e}
+func CreateEvalFrame(p Frame, o SchemeObject, e *Environ) (f Frame) {
+	return &EvalFrame{Parent: p, Obj: o, Env: e}
 }
 
 func (ef *EvalFrame) Debug() (r string) {
@@ -29,6 +25,10 @@ func (ef *EvalFrame) Debug() (r string) {
 
 func (ef *EvalFrame) SetParent(p Frame) {
 	ef.Parent = p
+}
+
+func (ef *EvalFrame) GetEnv() (e *Environ) {
+	return ef.Env
 }
 
 func (ef *EvalFrame) Exec(i SchemeObject) (r SchemeObject, next Frame, err error) {
@@ -45,8 +45,8 @@ type PrognFrame struct {
 	Env    *Environ
 }
 
-func CreatePrognFrame(o *Cons, e *Environ) (f Frame) {
-	return &PrognFrame{Obj: o, Env: e}
+func CreatePrognFrame(p Frame, o *Cons, e *Environ) (f Frame) {
+	return &PrognFrame{Parent: p, Obj: o, Env: e}
 }
 
 func (pf *PrognFrame) Debug() (r string) {
@@ -57,6 +57,10 @@ func (pf *PrognFrame) SetParent(p Frame) {
 	pf.Parent = p
 }
 
+func (pf *PrognFrame) GetEnv() (e *Environ) {
+	return pf.Env
+}
+
 func (pf *PrognFrame) Exec(i SchemeObject) (r SchemeObject, next Frame, err error) {
 	var obj SchemeObject
 
@@ -65,16 +69,14 @@ func (pf *PrognFrame) Exec(i SchemeObject) (r SchemeObject, next Frame, err erro
 		return Onil, pf.Parent, nil
 	case pf.Obj.Cdr == Onil: // jump
 		obj := pf.Obj.Car
-		next = CreateEvalFrame(obj, pf.Env)
-		next.SetParent(pf.Parent)
+		next = CreateEvalFrame(pf.Parent, obj, pf.Env)
 	default:
 		obj, pf.Obj, err = pf.Obj.Pop()
 		if err != nil {
 			return
 		}
 
-		next = CreateEvalFrame(obj, pf.Env)
-		next.SetParent(pf)
+		next = CreateEvalFrame(pf, obj, pf.Env)
 	}
 	return
 }
@@ -88,8 +90,8 @@ type ApplyFrame struct {
 	Env        *Environ
 }
 
-func CreateApplyFrame(o *Cons, e *Environ) (f Frame) {
-	return &ApplyFrame{Args: o, Env: e}
+func CreateApplyFrame(p Frame, o *Cons, e *Environ) (f Frame) {
+	return &ApplyFrame{Parent: p, Args: o, Env: e}
 }
 
 func (af *ApplyFrame) Debug() (r string) {
@@ -98,6 +100,10 @@ func (af *ApplyFrame) Debug() (r string) {
 
 func (af *ApplyFrame) SetParent(p Frame) {
 	af.Parent = p
+}
+
+func (af *ApplyFrame) GetEnv() (e *Environ) {
+	return af.Env
 }
 
 func (af *ApplyFrame) Exec(i SchemeObject) (r SchemeObject, next Frame, err error) {
@@ -129,7 +135,7 @@ func (af *ApplyFrame) Exec(i SchemeObject) (r SchemeObject, next Frame, err erro
 	}
 
 	if af.Args == Onil { // all args has been evaled
-		r, next, err = af.P.Apply(af.EvaledArgs, af.Parent)
+		r, next, err = af.P.Apply(af.EvaledArgs, af)
 		if err != nil {
 			log.Error("%s", err)
 			return
@@ -145,7 +151,6 @@ func (af *ApplyFrame) Exec(i SchemeObject) (r SchemeObject, next Frame, err erro
 		return
 	}
 
-	next = CreateEvalFrame(obj, af.Env)
-	next.SetParent(af)
+	next = CreateEvalFrame(af, obj, af.Env)
 	return
 }

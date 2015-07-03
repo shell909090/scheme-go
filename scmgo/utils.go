@@ -32,10 +32,6 @@ var (
 	DefaultNames = make(map[string]SchemeObject)
 )
 
-func Register(name string, f func(o *Cons, p Frame) (r SchemeObject, next Frame, err error)) {
-	DefaultNames[name] = &GoFunc{Name: name, f: f}
-}
-
 func SchemeObjectToString(o SchemeObject) (s string) {
 	if o == nil {
 		return ""
@@ -72,7 +68,7 @@ func RunCode(code SchemeObject) (result SchemeObject, err error) {
 		return nil, ErrType
 	}
 	env := &Environ{Parent: nil, Names: DefaultNames}
-	init_frame := CreatePrognFrame(progn, env)
+	init_frame := CreatePrognFrame(nil, progn, env)
 
 	result, err = Trampoline(init_frame, nil)
 	if result == nil {

@@ -9,6 +9,11 @@ type Evalor interface {
 	Eval(env *Environ, p Frame) (r SchemeObject, next Frame, err error)
 }
 
+type Procedure interface {
+	IsApplicativeOrder() bool
+	Apply(o *Cons, p *ApplyFrame) (r SchemeObject, next Frame, err error)
+}
+
 type Formatter interface {
 	Format(s io.Writer, lv int) (rv int, err error)
 }
@@ -152,10 +157,8 @@ func (o *Cons) Eval(env *Environ, p Frame) (r SchemeObject, next Frame, err erro
 		return
 	}
 
-	af := CreateApplyFrame(o, env)
-	af.SetParent(p)
-	next = CreateEvalFrame(procedure, env)
-	next.SetParent(af)
+	af := CreateApplyFrame(p, o, env)
+	next = CreateEvalFrame(af, procedure, env)
 	return
 }
 
@@ -316,36 +319,4 @@ func ListFromSlice(s []SchemeObject) (o SchemeObject) {
 		o = &Cons{Car: s[i], Cdr: o}
 	}
 	return o
-}
-
-type GoFunc struct {
-	Name string
-	f    func(i *Cons, p Frame) (r SchemeObject, next Frame, err error)
-}
-
-func (gf *GoFunc) IsApplicativeOrder() bool {
-	return true
-}
-
-func (gf *GoFunc) Eval(env *Environ, p Frame) (r SchemeObject, next Frame, err error) {
-	panic("run eval of gofunc")
-}
-
-func (gf *GoFunc) Apply(i SchemeObject, p Frame) (r SchemeObject, next Frame, err error) {
-	o, ok := i.(*Cons)
-	if !ok {
-		return nil, nil, ErrType
-	}
-
-	log.Debug("apply %s %s", gf.Name, SchemeObjectToString(i))
-	r, next, err = gf.f(o, p)
-	log.Debug("result %s", SchemeObjectToString(r))
-	return
-}
-
-func (gf *GoFunc) Format(s io.Writer, lv int) (rv int, err error) {
-	s.Write([]byte("!"))
-	rv, err = s.Write([]byte(gf.Name))
-	rv += lv + 1
-	return
 }
