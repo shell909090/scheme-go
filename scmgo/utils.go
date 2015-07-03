@@ -14,7 +14,6 @@ var (
 	ErrUnknown        = errors.New("unknown error")
 	ErrNameNotFound   = errors.New("name not found")
 	ErrNotRunnable    = errors.New("object not runnable")
-	ErrArguments      = errors.New("wrong arguments")
 )
 
 var (

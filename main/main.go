@@ -5,6 +5,7 @@ import (
 	stdlog "log"
 	"os"
 
+	_ "bitbucket.org/shell909090/scheme-go/internal"
 	"bitbucket.org/shell909090/scheme-go/parser"
 	"bitbucket.org/shell909090/scheme-go/scmgo"
 	"github.com/op/go-logging"
