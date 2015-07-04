@@ -10,7 +10,6 @@ type Evalor interface {
 }
 
 type Formatter interface {
-	// Format(s io.Writer, lv int) (rv int, err error)
 	Format() (r string)
 }
 

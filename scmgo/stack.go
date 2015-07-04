@@ -3,11 +3,11 @@ package scmgo
 import "fmt"
 
 type Frame interface {
-	Format() (r string)
+	Formatter
 	GetParent() (f Frame)
 	GetEnv() (e *Environ)
 	Return(i SchemeObject) (err error)
-	Eval() (next Frame, err error)
+	Exec() (next Frame, err error)
 }
 
 type EndFrame struct {
@@ -32,7 +32,7 @@ func (ef *EndFrame) Return(i SchemeObject) (err error) {
 	return
 }
 
-func (ef *EndFrame) Eval() (next Frame, err error) {
+func (ef *EndFrame) Exec() (next Frame, err error) {
 	return nil, ErrUnknown
 }
 
@@ -66,7 +66,7 @@ func (bf *BeginFrame) Return(i SchemeObject) (err error) {
 	return nil
 }
 
-func (bf *BeginFrame) Eval() (next Frame, err error) {
+func (bf *BeginFrame) Exec() (next Frame, err error) {
 	var obj SchemeObject
 
 	for {
@@ -76,11 +76,11 @@ func (bf *BeginFrame) Eval() (next Frame, err error) {
 		case bf.Obj.Cdr == Onil: // jump
 			obj := bf.Obj.Car
 
-			next, err = EvalAndReturn(obj, bf.Env, bf.Parent)
-			return
+			return EvalAndReturn(obj, bf.Env, bf.Parent)
 		default: // eval
 			obj, bf.Obj, err = bf.Obj.Pop()
 			if err != nil {
+				log.Error("%s", err)
 				return
 			}
 
@@ -148,9 +148,8 @@ func (af *ApplyFrame) Apply(o *Cons) (next Frame, err error) {
 	return
 }
 
-func (af *ApplyFrame) Eval() (next Frame, err error) {
-	var t, obj SchemeObject
-
+func (af *ApplyFrame) Exec() (next Frame, err error) {
+	var obj SchemeObject
 	if !af.P.IsApplicativeOrder() { // normal order
 		next, err = af.Apply(af.Args)
 		return
@@ -163,16 +162,10 @@ func (af *ApplyFrame) Eval() (next Frame, err error) {
 			return
 		}
 
-		t, next, err = obj.Eval(af.Env, af)
-		if err != nil {
-			log.Error("%s", err)
+		next, err = EvalAndReturn(obj, af.Env, af)
+		if err != nil || next != nil {
 			return
 		}
-		if next != nil { // if had to call next frame, quit to call
-			return
-		}
-		// append to evaled args.
-		af.EvaledArgs = af.EvaledArgs.Push(t)
 	}
 
 	// all args has been evaled
@@ -214,58 +207,53 @@ func (cf *CondFrame) Return(i SchemeObject) (err error) {
 		return ErrType
 	}
 
+	// pop header condition.
 	t, cf.Obj, err = cf.Obj.Pop()
 	if err != nil {
 		return
 	}
-
 	cond, ok := t.(*Cons)
 	if !ok {
 		return ErrType
 	}
 
-	t, err = cond.GetN(1)
-	if err != nil {
-		return
-	}
-
 	if bool(b) {
-		cf.Hit = t
+		cf.Hit, err = cond.GetN(1)
+		if err != nil {
+			return
+		}
 	}
 	return
 }
 
-func (cf *CondFrame) Eval() (next Frame, err error) {
+func (cf *CondFrame) Exec() (next Frame, err error) {
 	var ok bool
 	var cond *Cons
 	var t SchemeObject
 
 	if cf.Hit != nil { // finally, we matched a condition.
-		next, err = EvalAndReturn(cf.Hit, cf.Env, cf.Parent)
-		return
+		return EvalAndReturn(cf.Hit, cf.Env, cf.Parent)
 	}
 
+	// get header condition.
 	t = cf.Obj.Car
-
 	cond, ok = t.(*Cons)
 	if !ok {
 		return nil, ErrType
 	}
 
+	// get first element of condition.
 	t = cond.Car
+
 	if n, ok := t.(*Symbol); ok && n.Name == "else" {
-		log.Debug("hit else")
-		t, err = cond.GetN(1)
+		cf.Hit, err = cond.GetN(1)
 		if err != nil {
 			log.Error("%s", err)
 			return
 		}
-		cf.Hit = t
 		return cf, nil
 	}
 
 	// actually eval a condition.
-
-	next, err = EvalAndReturn(t, cf.Env, cf)
-	return
+	return EvalAndReturn(t, cf.Env, cf)
 }

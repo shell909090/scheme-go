@@ -5,7 +5,7 @@ import (
 	"io"
 )
 
-func GrammarReadString(src *bufio.Reader) (s string, err error) {
+func readString(src *bufio.Reader) (s string, err error) {
 	var strbuf []rune
 	strbuf = append(strbuf, '"')
 	for c, _, err := src.ReadRune(); err == nil; c, _, err = src.ReadRune() {
@@ -41,7 +41,7 @@ func GrammarReadString(src *bufio.Reader) (s string, err error) {
 	return
 }
 
-func GrammarParser(source io.ReadCloser, cout chan string) (err error) {
+func Grammar(source io.ReadCloser, cout chan string) (err error) {
 	src := bufio.NewReader(source)
 	defer source.Close()
 	defer close(cout)
@@ -65,7 +65,7 @@ func GrammarParser(source io.ReadCloser, cout chan string) (err error) {
 			if symbolbuf != nil {
 				return ErrQuotaInSymbol
 			}
-			line, err := GrammarReadString(src)
+			line, err := readString(src)
 			if err != nil {
 				return err
 			}

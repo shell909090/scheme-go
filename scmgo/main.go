@@ -3,7 +3,7 @@ package scmgo
 func Trampoline(f Frame) (result SchemeObject, err error) {
 	for {
 		log.Debug("stack:\n%s", StackFormatter(f))
-		f, err = f.Eval()
+		f, err = f.Exec()
 		if err != nil {
 			log.Error("%s", err)
 			return

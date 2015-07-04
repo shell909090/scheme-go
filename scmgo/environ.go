@@ -1,8 +1,27 @@
 package scmgo
 
+import "strings"
+
 type Environ struct {
+	Formatter
 	Parent *Environ
 	Names  map[string]SchemeObject
+}
+
+func formatNames(names map[string]SchemeObject) (r string) {
+	str := make([]string, 0)
+	for k, _ := range names {
+		str = append(str, k)
+	}
+	return strings.Join(str, " ")
+}
+
+func (e *Environ) Format() (r string) {
+	str := make([]string, 0)
+	for ce := e; ce != nil; ce = ce.Parent {
+		str = append(str, formatNames(ce.Names))
+	}
+	return strings.Join(str, "\n")
 }
 
 func (e *Environ) Fork(r map[string]SchemeObject) (ne *Environ) {

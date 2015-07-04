@@ -25,7 +25,7 @@ func (ip *InternalProcedure) Eval(env *Environ, p Frame) (r SchemeObject, next F
 }
 
 func (ip *InternalProcedure) Apply(o *Cons, p Frame) (r SchemeObject, next Frame, err error) {
-	log.Info("apply internal %s, argument: %s", ip.Name, o.Format())
+	log.Info("apply !%s, argument: %s", ip.Name, o.Format())
 	r, next, err = ip.f(o, p)
 	switch {
 	case next != nil:
@@ -55,7 +55,7 @@ func (lp *LambdaProcedure) Eval(env *Environ, p Frame) (r SchemeObject, next Fra
 	panic("run eval of lambda procedure")
 }
 
-func (lp *LambdaProcedure) GenNames(o *Cons) (r map[string]SchemeObject, err error) {
+func genNames(lp *LambdaProcedure, o *Cons) (r map[string]SchemeObject, err error) {
 	var s, s1 *Symbol
 	r = make(map[string]SchemeObject)
 
@@ -97,13 +97,15 @@ func (lp *LambdaProcedure) GenNames(o *Cons) (r map[string]SchemeObject, err err
 }
 
 func (lp *LambdaProcedure) Apply(o *Cons, p Frame) (r SchemeObject, next Frame, err error) {
-	names, err := lp.GenNames(o)
+	names, err := genNames(lp, o)
 	if err != nil {
 		return
 	}
-	log.Info("apply lambda %s", lp.Format())
-	// coming from apply, so pass this frame.
-	next = CreateBeginFrame(lp.Obj, lp.Env.Fork(names), p.GetParent())
+	env := lp.Env.Fork(names)
+	log.Info("apply %s, env:\n%s", lp.Format(), env.Format())
+	next = CreateBeginFrame(
+		lp.Obj, env,
+		p.GetParent()) // coming from apply, so pass this frame.
 	return
 }
 

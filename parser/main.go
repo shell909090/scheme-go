@@ -24,12 +24,12 @@ var (
 func SourceToAST(source io.ReadCloser) (code scmgo.SchemeObject, err error) {
 	cpipe := make(chan string)
 	go func() {
-		err = GrammarParser(source, cpipe)
+		err = Grammar(source, cpipe)
 	}()
 	// for chunk, ok := <-cpipe; ok; chunk, ok = <-cpipe {
 	// 	fmt.Println("chunk:", string(chunk))
 	// }
 	// return nil, nil
 
-	return CodeParser(cpipe)
+	return Code(cpipe)
 }

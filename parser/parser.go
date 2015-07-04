@@ -10,7 +10,7 @@ import (
 // control_chars
 // ()' \n\r\t
 
-func BooleanFromString(s string) (o scmgo.Boolean, err error) {
+func StringToBoolean(s string) (o scmgo.Boolean, err error) {
 	if len(s) != 2 || s[0] != '#' {
 		return scmgo.Ofalse, ErrBooleanUnknown
 	}
@@ -23,7 +23,7 @@ func BooleanFromString(s string) (o scmgo.Boolean, err error) {
 	return scmgo.Ofalse, ErrBooleanUnknown
 }
 
-func CodeNumber(chunk string) (obj scmgo.SchemeObject, err error) {
+func StringToNumber(chunk string) (obj scmgo.SchemeObject, err error) {
 	if strings.Index(chunk, ".") != -1 {
 		var i float64
 		i, err = strconv.ParseFloat(chunk, 64)
@@ -36,18 +36,16 @@ func CodeNumber(chunk string) (obj scmgo.SchemeObject, err error) {
 	return
 }
 
-func CodeParser(cin chan string) (code scmgo.SchemeObject, err error) {
+func Code(cin chan string) (code scmgo.SchemeObject, err error) {
 	var obj scmgo.SchemeObject
 	var objs []scmgo.SchemeObject
+	// var stack []*[]scmgo.SchemeObject
 
 QUIT:
 	for chunk, ok := <-cin; ok; chunk, ok = <-cin {
 		switch chunk[0] {
 		case '#': // Boolean
-			obj, err = BooleanFromString(chunk)
-			if err != nil {
-				return
-			}
+			obj, err = StringToBoolean(chunk)
 		case '"': // String
 			obj = scmgo.String(chunk[1 : len(chunk)-1])
 		case '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
@@ -55,24 +53,23 @@ QUIT:
 				// - without number is symbol
 				obj = &scmgo.Symbol{Name: chunk}
 			} else { // Integer & Float
-				obj, err = CodeNumber(chunk)
-				if err != nil {
-					return
-				}
+				obj, err = StringToNumber(chunk)
 			}
 		case '\'': // Quote
 			obj = new(scmgo.Quote)
 		case ';': // Comment
 			obj = nil
 		case '(': // Cons
-			obj, err = CodeParser(cin)
-			if err != nil {
-				return nil, err
-			}
+			obj, err = Code(cin)
 		case ')': // return Cons
 			break QUIT
 		default: // Symbol
 			obj = &scmgo.Symbol{Name: chunk}
+		}
+
+		if err != nil {
+			log.Error("%s", err)
+			return
 		}
 
 		if obj == nil { // pass comment
@@ -81,8 +78,7 @@ QUIT:
 
 		// processing Quote
 		if len(objs) > 0 {
-			o := objs[len(objs)-1]
-			if last, ok := o.(*scmgo.Quote); ok {
+			if last, ok := objs[len(objs)-1].(*scmgo.Quote); ok {
 				last.Objs = obj
 				continue
 			}
