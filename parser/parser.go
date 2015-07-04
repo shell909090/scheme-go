@@ -44,8 +44,8 @@ func objsToList(objs []scmgo.SchemeObject) (code scmgo.SchemeObject, err error) 
 		}
 	}
 	code = scmgo.Onil
-	for i := len(s) - 1; i >= 0; i-- {
-		code = &scmgo.Cons{Car: s[i], Cdr: code}
+	for i := len(objs) - 1; i >= 0; i-- {
+		code = &scmgo.Cons{Car: objs[i], Cdr: code}
 	}
 	return
 }
@@ -71,7 +71,7 @@ func Code(cin chan string) (code scmgo.SchemeObject, err error) {
 		case '\'': // Quote
 			obj = new(scmgo.Quote)
 		case ';': // Comment
-			obj = nil
+			obj = &scmgo.Comment{Content: chunk[1 : len(chunk)-1]}
 		case '(': // Cons
 			stack = append(stack, objs)
 			objs = nil
@@ -90,10 +90,6 @@ func Code(cin chan string) (code scmgo.SchemeObject, err error) {
 		if err != nil {
 			log.Error("%s", err)
 			return
-		}
-
-		if obj == nil { // pass comment
-			continue
 		}
 
 		// processing Quote

@@ -47,6 +47,18 @@ func (o *Quote) Format() (r string) {
 	return "'" + o.Objs.Format()
 }
 
+type Comment struct {
+	Content string
+}
+
+func (c *Comment) Eval(env *Environ, p Frame) (r SchemeObject, next Frame, err error) {
+	return nil, nil, ErrUnknown
+}
+
+func (c *Comment) Format() (r string) {
+	return ";" + c.Content
+}
+
 type Boolean bool
 
 func (o Boolean) Eval(env *Environ, p Frame) (r SchemeObject, next Frame, err error) {

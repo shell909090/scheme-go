@@ -58,22 +58,20 @@ func EvalAndReturn(i SchemeObject, e *Environ, p Frame) (next Frame, err error) 
 	return
 }
 
-func ReverseList(o *Cons) (r *Cons, err error) {
-	if o == Onil {
-		return o, nil
-	}
-
+func ReverseList(o *Cons) (result *Cons, err error) {
 	var ok bool
-	r = Onil // that's for right
-	l := o   // and this is left
-	for l != Onil {
-		next := l.Cdr // next is the left of left
-		l.Cdr = r
-		r = l
-		l, ok = next.(*Cons)
+	// image a list from left to right.
+	l := Onil // that's for left.
+	r := o    // and this is right.
+
+	for r != Onil {
+		next := r.Cdr        // record the next one of the left.
+		r.Cdr = l            // turn right back.
+		l = r                // push left forward.
+		r, ok = next.(*Cons) // and push right forward, if can.
 		if !ok {
 			return nil, ErrISNotAList
 		}
 	}
-	return
+	return l, nil
 }
