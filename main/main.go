@@ -72,7 +72,7 @@ func Transformer(src scmgo.SchemeObject) (code scmgo.SchemeObject, err error) {
 		return
 	}
 
-	os.Stdout.WriteString("-------translate-------\n")
+	os.Stdout.WriteString("-------transformer-------\n")
 	os.Stdout.WriteString(code.Format())
 	os.Stdout.WriteString("\n")
 	return

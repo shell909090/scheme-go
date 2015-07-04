@@ -1,4 +1,4 @@
-package translator
+package transformer
 
 import (
 	"bitbucket.org/shell909090/scheme-go/scmgo"
