@@ -39,9 +39,8 @@ func StringToNumber(chunk string) (obj scmgo.SchemeObject, err error) {
 func Code(cin chan string) (code scmgo.SchemeObject, err error) {
 	var obj scmgo.SchemeObject
 	var objs []scmgo.SchemeObject
-	// var stack []*[]scmgo.SchemeObject
+	var stack [][]scmgo.SchemeObject
 
-QUIT:
 	for chunk, ok := <-cin; ok; chunk, ok = <-cin {
 		switch chunk[0] {
 		case '#': // Boolean
@@ -60,9 +59,20 @@ QUIT:
 		case ';': // Comment
 			obj = nil
 		case '(': // Cons
-			obj, err = Code(cin)
+			// obj, err = Code(cin)
+			stack = append(stack, objs)
+			objs = nil
 		case ')': // return Cons
-			break QUIT
+			if len(stack) == 0 {
+				return nil, ErrParenthesisNotClose
+			}
+			obj, err = objsToList(objs)
+			if err != nil {
+				log.Error("%s", err)
+				return
+			}
+			objs = stack[len(stack)-1]
+			stack = stack[:len(stack)-1]
 		default: // Symbol
 			obj = &scmgo.Symbol{Name: chunk}
 		}
@@ -86,11 +96,14 @@ QUIT:
 
 		objs = append(objs, obj)
 	}
+	return objsToList(objs)
+}
 
+func objsToList(objs []scmgo.SchemeObject) (code scmgo.SchemeObject, err error) {
 	if len(objs) > 0 {
 		o := objs[len(objs)-1]
 		if last, ok := o.(*scmgo.Quote); ok && last.Objs == nil {
-			return code, ErrQuoteInEnd
+			return nil, ErrQuoteInEnd
 		}
 	}
 
