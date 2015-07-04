@@ -27,8 +27,12 @@ func (ip *InternalProcedure) Eval(env *Environ, p Frame) (r SchemeObject, next F
 func (ip *InternalProcedure) Apply(o *Cons, p Frame) (r SchemeObject, next Frame, err error) {
 	log.Info("apply internal %s, argument: %s", ip.Name, o.Format())
 	r, next, err = ip.f(o, p)
-	// FIXME:
-	// log.Info("result: %s, next: %p", r.Format(), next)
+	switch {
+	case next != nil:
+		log.Info("next: %p", next)
+	case r != nil:
+		log.Info("result: %s", r.Format())
+	}
 	return
 }
 

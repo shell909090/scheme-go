@@ -134,7 +134,6 @@ func (o *Cons) Eval(env *Environ, p Frame) (r SchemeObject, next Frame, err erro
 
 func (o *Cons) Format() (r string) {
 	buf := bytes.NewBuffer(nil)
-
 	_, err := PrettyFormat(buf, o, 0)
 	if err != nil {
 		log.Error("%s", err)
