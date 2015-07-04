@@ -8,8 +8,8 @@ import (
 	_ "bitbucket.org/shell909090/scheme-go/internal"
 	"bitbucket.org/shell909090/scheme-go/parser"
 	"bitbucket.org/shell909090/scheme-go/scmgo"
-	"bitbucket.org/shell909090/scheme-go/translator"
-	"github.com/op/go-logging"
+	"bitbucket.org/shell909090/scheme-go/transformer"
+	logging "github.com/op/go-logging"
 )
 
 var log = logging.MustGetLogger("")
@@ -65,8 +65,8 @@ func parse() (code scmgo.SchemeObject, err error) {
 	return
 }
 
-func translate(src scmgo.SchemeObject) (code scmgo.SchemeObject, err error) {
-	code, err = translator.Translate(src)
+func Transformer(src scmgo.SchemeObject) (code scmgo.SchemeObject, err error) {
+	code, err = transformer.Transformer(src)
 	if err != nil {
 		log.Error("%s", err)
 		return
@@ -117,7 +117,7 @@ func main() {
 		return
 	}
 
-	code, err = translate(code)
+	code, err = Transformer(code)
 	if err != nil {
 		log.Error("%s", err)
 		return

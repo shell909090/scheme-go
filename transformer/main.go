@@ -24,7 +24,7 @@ func RemoveComment(o *scmgo.Cons) (err error) {
 	return
 }
 
-func Translate(src scmgo.SchemeObject) (code scmgo.SchemeObject, err error) {
+func Transformer(src scmgo.SchemeObject) (code scmgo.SchemeObject, err error) {
 	code = src
 	c, ok := code.(*scmgo.Cons)
 	if !ok {
