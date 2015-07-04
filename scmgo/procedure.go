@@ -29,9 +29,9 @@ func (ip *InternalProcedure) Eval(env *Environ, p Frame) (r SchemeObject, next F
 }
 
 func (ip *InternalProcedure) Apply(o *Cons, p Frame) (r SchemeObject, next Frame, err error) {
-	log.Info("apply %s %s", ip.Name, SchemeObjectToString(o))
+	log.Info("apply internal %s, argument: %s", ip.Name, SchemeObjectToString(o))
 	r, next, err = ip.f(o, p)
-	log.Info("result %s", SchemeObjectToString(r))
+	log.Info("result: %s, next: %p", SchemeObjectToString(r), next)
 	return
 }
 
@@ -103,8 +103,9 @@ func (lp *LambdaProcedure) Apply(o *Cons, p Frame) (r SchemeObject, next Frame, 
 	if err != nil {
 		return
 	}
-	// this is called by apply frame, so pass this frame
-	next = CreatePrognFrame(p.GetParent(), lp.Obj, lp.Env.Fork(names))
+	log.Info("apply lambda %s", SchemeObjectToString(lp))
+	// coming from apply, so pass this frame.
+	next = CreateBeginFrame(lp.Obj, lp.Env.Fork(names), p.GetParent())
 	return
 }
 

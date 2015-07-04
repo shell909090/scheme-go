@@ -46,22 +46,34 @@ func SchemeObjectToString(o SchemeObject) (s string) {
 func StackFormatter(f Frame) (r string) {
 	buf := bytes.NewBuffer(nil)
 	for c := f; c != nil; c = c.GetParent() {
-		buf.WriteString(c.Format() + "\n")
+		if _, ok := c.(*EndFrame); !ok {
+			buf.WriteString(c.Format() + "\n")
+		}
 	}
 	return buf.String()
 }
 
-func EvalMaybeInFrame(p Frame, i SchemeObject, e *Environ) (r SchemeObject, next Frame, err error) {
-	_, ok := i.(*Cons)
-	if ok {
-		next = CreateEvalFrame(p, i, e)
-		return
+func EvalMaybeInFrame(i SchemeObject, e *Environ, p Frame) (r SchemeObject, next Frame, err error) {
+	r, next, err = i.Eval(e, p)
+	return
+}
+
+func ReverseList(o *Cons) (r *Cons, err error) {
+	if o == Onil {
+		return o, nil
 	}
 
-	r, next, err = i.Eval(e, p)
-	if next != nil {
-		log.Error("fast run a object but not return")
-		return nil, nil, ErrUnknown
+	var ok bool
+	r = Onil // that's for right
+	l := o   // and this is left
+	for l != Onil {
+		next := l.Cdr // next is the left of left
+		l.Cdr = r
+		r = l
+		l, ok = next.(*Cons)
+		if !ok {
+			return nil, ErrISNotAList
+		}
 	}
 	return
 }

@@ -6,96 +6,132 @@ type Frame interface {
 	Format() (r string)
 	GetParent() (f Frame)
 	GetEnv() (e *Environ)
-	Eval(i SchemeObject) (r SchemeObject, next Frame, err error)
+	Return(i SchemeObject) (err error)
+	Eval() (next Frame, err error)
 }
 
-type EvalFrame struct {
-	Parent Frame
-	Obj    SchemeObject
+type EndFrame struct {
+	result SchemeObject
 	Env    *Environ
 }
 
-func CreateEvalFrame(p Frame, o SchemeObject, e *Environ) (f Frame) {
-	return &EvalFrame{Parent: p, Obj: o, Env: e}
+func (ef *EndFrame) Format() (r string) {
+	return "End"
 }
 
-func (ef *EvalFrame) Format() (r string) {
-	return fmt.Sprintf("Eval: {%s}", SchemeObjectToString(ef.Obj))
+func (ef *EndFrame) GetParent() (f Frame) {
+	return nil
 }
 
-func (ef *EvalFrame) GetParent() (f Frame) {
-	return ef.Parent
-}
-
-func (ef *EvalFrame) GetEnv() (e *Environ) {
+func (ef *EndFrame) GetEnv() (e *Environ) {
 	return ef.Env
 }
 
-func (ef *EvalFrame) Eval(i SchemeObject) (r SchemeObject, next Frame, err error) {
-	log.Info("eval: {%s}", SchemeObjectToString(ef.Obj))
-	r, next, err = ef.Obj.Eval(ef.Env, ef.Parent)
-	if next == nil {
-		next = ef.Parent
-	}
-	if err != nil {
-		log.Error("%s", err)
-		return
-	}
+func (ef *EndFrame) Return(i SchemeObject) (err error) {
+	ef.result = i
 	return
 }
 
-type PrognFrame struct {
+func (ef *EndFrame) Eval() (next Frame, err error) {
+	return nil, ErrUnknown
+}
+
+// type EvalFrame struct {
+// 	Parent Frame
+// 	Obj    SchemeObject
+// 	Env    *Environ
+// }
+
+// func CreateEvalFrame(o SchemeObject, e *Environ, p Frame) (f Frame) {
+// 	return &EvalFrame{Parent: p, Obj: o, Env: e}
+// }
+
+// func (ef *EvalFrame) Format() (r string) {
+// 	return fmt.Sprintf("Eval: {%s}", SchemeObjectToString(ef.Obj))
+// }
+
+// func (ef *EvalFrame) GetParent() (f Frame) {
+// 	return ef.Parent
+// }
+
+// func (ef *EvalFrame) GetEnv() (e *Environ) {
+// 	return ef.Env
+// }
+
+// func (ef *EvalFrame) Return(i SchemeObject) (err error) {
+// 	return ErrUnknown
+// }
+
+// func (ef *EvalFrame) Eval(i SchemeObject) (r SchemeObject, next Frame, err error) {
+// 	log.Info("eval: {%s}", SchemeObjectToString(ef.Obj))
+// 	r, next, err = ef.Obj.Eval(ef.Env, ef.Parent)
+// 	if next == nil {
+// 		next = ef.Parent
+// 	}
+// 	if err != nil {
+// 		log.Error("%s", err)
+// 		return
+// 	}
+// 	return
+// }
+
+type BeginFrame struct {
 	Parent Frame
 	Obj    *Cons
 	Env    *Environ
 }
 
-func CreatePrognFrame(p Frame, o *Cons, e *Environ) (f Frame) {
-	return &PrognFrame{Parent: p, Obj: o, Env: e}
+func CreateBeginFrame(o *Cons, e *Environ, p Frame) (f Frame) {
+	return &BeginFrame{Parent: p, Obj: o, Env: e}
 }
 
-func (pf *PrognFrame) Format() (r string) {
-	n, err := pf.Obj.Len()
+func (bf *BeginFrame) Format() (r string) {
+	n, err := bf.Obj.Len()
 	if err != nil {
 		n = 0
 	}
-	return fmt.Sprintf("Progn: %d", n)
+	return fmt.Sprintf("Begin: %d", n)
 }
 
-func (pf *PrognFrame) GetParent() (f Frame) {
-	return pf.Parent
+func (bf *BeginFrame) GetParent() (f Frame) {
+	return bf.Parent
 }
 
-func (pf *PrognFrame) GetEnv() (e *Environ) {
-	return pf.Env
+func (bf *BeginFrame) GetEnv() (e *Environ) {
+	return bf.Env
 }
 
-func (pf *PrognFrame) Eval(i SchemeObject) (r SchemeObject, next Frame, err error) {
-	var obj SchemeObject
+func (bf *BeginFrame) Return(i SchemeObject) (err error) {
+	return nil
+}
+
+func (bf *BeginFrame) Eval() (next Frame, err error) {
+	var t, obj SchemeObject
 
 	for {
-
 		switch {
-		case pf.Obj == Onil:
-			return Onil, pf.Parent, nil
-		case pf.Obj.Cdr == Onil: // jump
-			obj := pf.Obj.Car
+		case bf.Obj == Onil: // FIXME: not make sense
+			return bf.Parent, nil
+		case bf.Obj.Cdr == Onil: // jump
+			obj := bf.Obj.Car
 
-			r, next, err = EvalMaybeInFrame(pf.Parent, obj, pf.Env)
+			t, next, err = obj.Eval(bf.Env, bf.Parent)
 			if err != nil {
 				return
 			}
-			if next == nil {
-				next = pf.Parent
+			if next != nil {
+				return
 			}
+			next = bf.Parent
+			err = next.Return(t)
 			return
-		default:
-			obj, pf.Obj, err = pf.Obj.Pop()
+		default: // eval
+			obj, bf.Obj, err = bf.Obj.Pop()
 			if err != nil {
 				return
 			}
 
-			_, next, err = EvalMaybeInFrame(pf, obj, pf.Env)
+			_, next, err = obj.Eval(bf.Env, bf)
 			if err != nil || next != nil {
 				return
 			}
@@ -109,12 +145,11 @@ type ApplyFrame struct {
 	P          Procedure
 	Args       *Cons
 	EvaledArgs *Cons
-	EvaledTail *Cons
 	Env        *Environ
 }
 
-func CreateApplyFrame(p Frame, o *Cons, e *Environ) (f Frame) {
-	return &ApplyFrame{Parent: p, Args: o, EvaledArgs: Onil, Env: e}
+func CreateApplyFrame(a *Cons, e *Environ, p Frame) (f *ApplyFrame) {
+	return &ApplyFrame{Parent: p, Args: a, EvaledArgs: Onil, Env: e}
 }
 
 func (af *ApplyFrame) Format() (r string) {
@@ -129,70 +164,65 @@ func (af *ApplyFrame) GetEnv() (e *Environ) {
 	return af.Env
 }
 
-func (af *ApplyFrame) AppendEvaled(i SchemeObject) {
-	t := &Cons{Car: i, Cdr: Onil}
-	if af.EvaledArgs == Onil {
-		af.EvaledArgs = t
-		af.EvaledTail = t
-	} else {
-		af.EvaledTail.Cdr = t
-		af.EvaledTail = t
-	}
-}
-
-func (af *ApplyFrame) Apply(o *Cons) (r SchemeObject, next Frame, err error) {
-	r, next, err = af.P.Apply(o, af)
-	if err != nil {
-		log.Error("%s", err)
+func (af *ApplyFrame) Return(i SchemeObject) (err error) {
+	var ok bool
+	if af.P != nil {
+		af.EvaledArgs = af.EvaledArgs.Push(i)
 		return
 	}
-	if next == nil {
-		next = af.Parent
+	af.P, ok = i.(Procedure)
+	if !ok {
+		return ErrNotRunnable
 	}
 	return
 }
 
-func (af *ApplyFrame) Eval(i SchemeObject) (r SchemeObject, next Frame, err error) {
-	var ok bool
-	var obj SchemeObject
+func (af *ApplyFrame) Apply(o *Cons) (next Frame, err error) {
+	t, next, err := af.P.Apply(o, af)
+	if err != nil {
+		log.Error("%s", err)
+		return
+	}
+	if next != nil {
+		return
+	}
+	next = af.Parent
+	err = next.Return(t)
+	return
+}
 
-	// accept argument
-	if af.P == nil {
-		af.P, ok = i.(Procedure)
-		if !ok {
-			return nil, nil, ErrNotRunnable
-		}
+func (af *ApplyFrame) Eval() (next Frame, err error) {
+	var t, obj SchemeObject
 
-		if !af.P.IsApplicativeOrder() { // normal order
-			r, next, err = af.Apply(af.Args)
-			return
-		}
-	} else {
-		af.AppendEvaled(i)
+	if !af.P.IsApplicativeOrder() { // normal order
+		next, err = af.Apply(af.Args)
+		return
 	}
 
-	for {
-		if af.Args == Onil { // all args has been evaled
-			r, next, err = af.Apply(af.EvaledArgs)
-			return
-		}
-
+	for af.Args != Onil {
 		// pop up next argument
 		obj, af.Args, err = af.Args.Pop()
 		if err != nil {
 			return
 		}
 
-		r, next, err = EvalMaybeInFrame(af, obj, af.Env)
+		t, next, err = obj.Eval(af.Env, af)
 		if err != nil {
 			return
 		}
 		if next != nil { // if had to call next frame, quit to call
 			return
-		} // otherwise, append to evaled args, and run next.
-
-		af.AppendEvaled(r)
+		}
+		// append to evaled args.
+		af.EvaledArgs = af.EvaledArgs.Push(t)
 	}
+
+	// all args has been evaled
+	af.EvaledArgs, err = ReverseList(af.EvaledArgs)
+	if err != nil {
+		return
+	}
+	next, err = af.Apply(af.EvaledArgs)
 	return
 }
 
@@ -200,9 +230,10 @@ type CondFrame struct {
 	Parent Frame
 	Obj    *Cons
 	Env    *Environ
+	Hit    SchemeObject
 }
 
-func CreateCondFrame(p Frame, o *Cons, e *Environ) (f Frame) {
+func CreateCondFrame(o *Cons, e *Environ, p Frame) (f Frame) {
 	return &CondFrame{Parent: p, Obj: o, Env: e}
 }
 
@@ -218,44 +249,63 @@ func (cf *CondFrame) GetEnv() (e *Environ) {
 	return cf.Env
 }
 
-func (cf *CondFrame) Eval(i SchemeObject) (r SchemeObject, next Frame, err error) {
-	var ok bool
+func (cf *CondFrame) Return(i SchemeObject) (err error) {
 	var t SchemeObject
+	b, ok := i.(Boolean)
+	if !ok {
+		return ErrType
+	}
+
+	t, cf.Obj, err = cf.Obj.Pop()
+	if err != nil {
+		return
+	}
+
+	cond, ok := t.(*Cons)
+	if !ok {
+		return ErrType
+	}
+
+	t, err = cond.GetN(1)
+	if err != nil {
+		return
+	}
+
+	if bool(b) {
+		cf.Hit = t
+	}
+	return
+}
+
+func (cf *CondFrame) Eval() (next Frame, err error) {
+	var ok bool
 	var cond *Cons
-	var b Boolean
+	var t SchemeObject
 
-	if i != nil {
-		b, ok = i.(Boolean)
-		if !ok {
-			return nil, nil, ErrType
-		}
-
-		t, cf.Obj, err = cf.Obj.Pop()
+	if cf.Hit != nil { // finally, we matched a condition.
+		t, next, err = cf.Hit.Eval(cf.Env, cf.Parent)
 		if err != nil {
+			log.Error("%s", err)
+			return
+		}
+		if next != nil {
 			return
 		}
 
-		if bool(b) {
-			cond, ok = t.(*Cons)
-			if !ok {
-				return nil, nil, ErrType
-			}
-
-			t, err = cond.GetN(1)
-			if err != nil {
-				return
-			}
-
-			next = CreateEvalFrame(cf.Parent, t, cf.Env)
+		next = cf.Parent
+		err = next.Return(t)
+		if err != nil {
+			log.Error("%s", err)
 			return
 		}
+		return
 	}
 
 	t = cf.Obj.Car
 
 	cond, ok = t.(*Cons)
 	if !ok {
-		return nil, nil, ErrType
+		return nil, ErrType
 	}
 
 	t = cond.Car
@@ -263,11 +313,23 @@ func (cf *CondFrame) Eval(i SchemeObject) (r SchemeObject, next Frame, err error
 		log.Debug("hit else")
 		t, err = cond.GetN(1)
 		if err != nil {
+			log.Error("%s", err)
 			return
 		}
-		next = CreateEvalFrame(cf.Parent, t, cf.Env)
+		cf.Hit = t
+		return cf, nil
+	}
+
+	// actually eval a condition.
+	t, next, err = t.Eval(cf.Env, cf)
+	if err != nil {
+		log.Error("%s", err)
 		return
 	}
-	next = CreateEvalFrame(cf, t, cf.Env)
+	if next != nil {
+		return
+	}
+
+	err = cf.Return(t)
 	return
 }

@@ -1,22 +1,15 @@
 package scmgo
 
-func StepDebuger(f Frame, r SchemeObject) {
-	if r != nil {
-		log.Debug("result: %s", SchemeObjectToString(r))
-	}
-	log.Debug("stack:\n%s", StackFormatter(f))
-	return
-}
-
-func Trampoline(init_frame Frame, init_obj SchemeObject) (result SchemeObject, err error) {
-	f := init_frame
-	result = init_obj
-	for f != nil {
-		// StepDebuger(f, result)
-		result, f, err = f.Eval(result)
+func Trampoline(f Frame) (result SchemeObject, err error) {
+	for {
+		log.Debug("stack:\n%s", StackFormatter(f))
+		f, err = f.Eval()
 		if err != nil {
 			log.Error("%s", err)
 			return
+		}
+		if t, ok := f.(*EndFrame); ok {
+			return t.result, nil
 		}
 	}
 	return
@@ -27,10 +20,14 @@ func RunCode(code SchemeObject) (result SchemeObject, err error) {
 	if !ok {
 		return nil, ErrType
 	}
-	env := &Environ{Parent: nil, Names: DefaultNames}
-	init_frame := CreatePrognFrame(nil, progn, env)
 
-	result, err = Trampoline(init_frame, nil)
+	env := &Environ{Parent: nil, Names: DefaultNames}
+	env = &Environ{Parent: env, Names: make(map[string]SchemeObject)}
+
+	var f Frame = &EndFrame{Env: env}
+	f = CreateBeginFrame(progn, env, f)
+
+	result, err = Trampoline(f)
 	if result == nil {
 		return nil, ErrUnknown
 	}

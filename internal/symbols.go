@@ -57,8 +57,8 @@ func Lambda(o *scmgo.Cons, p scmgo.Frame) (r scmgo.SchemeObject, next scmgo.Fram
 }
 
 func Cond(o *scmgo.Cons, p scmgo.Frame) (r scmgo.SchemeObject, next scmgo.Frame, err error) {
-	// this is called by apply frame, pass it.
-	next = scmgo.CreateCondFrame(p.GetParent(), o, p.GetEnv())
+	// coming from apply, so pass this frame.
+	next = scmgo.CreateCondFrame(o, p.GetEnv(), p.GetParent())
 	return
 }
 

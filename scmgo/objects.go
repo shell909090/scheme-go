@@ -126,8 +126,20 @@ func (o *Cons) Eval(env *Environ, p Frame) (r SchemeObject, next Frame, err erro
 		return
 	}
 
-	af := CreateApplyFrame(p, o, env)
-	next = CreateEvalFrame(af, procedure, env)
+	next = CreateApplyFrame(o, env, p) // not sure about procedure yet.
+	p = next
+
+	// get a result now, or get a frame which can return in future.
+	procedure, next, err = procedure.Eval(env, next)
+	if err != nil {
+		return
+	}
+	if next != nil {
+		return
+	}
+	// get return now
+	next = p
+	err = next.Return(procedure)
 	return
 }
 
@@ -234,12 +246,19 @@ func (o *Cons) Iter(f func(obj SchemeObject) (e error)) (err error) {
 }
 
 func (o *Cons) Pop() (r SchemeObject, next *Cons, err error) {
+	if o == Onil {
+		return nil, nil, ErrListOutOfIndex
+	}
 	r = o.Car
 	next, ok := o.Cdr.(*Cons)
 	if !ok {
 		return nil, nil, ErrISNotAList
 	}
 	return
+}
+
+func (o *Cons) Push(i SchemeObject) (next *Cons) {
+	return &Cons{Car: i, Cdr: o}
 }
 
 func (o *Cons) Len() (n int, err error) {
