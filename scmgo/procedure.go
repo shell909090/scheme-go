@@ -6,6 +6,7 @@ import (
 )
 
 type Procedure interface {
+	SchemeObject
 	IsApplicativeOrder() bool
 	Apply(o *Cons, p Frame) (r SchemeObject, next Frame, err error)
 }

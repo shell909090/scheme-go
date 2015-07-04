@@ -76,7 +76,7 @@ func (bf *BeginFrame) Eval() (next Frame, err error) {
 		case bf.Obj.Cdr == Onil: // jump
 			obj := bf.Obj.Car
 
-			next, err = Eval(obj, bf.Env, bf.Parent)
+			next, err = EvalAndReturn(obj, bf.Env, bf.Parent)
 			return
 		default: // eval
 			obj, bf.Obj, err = bf.Obj.Pop()
@@ -241,7 +241,7 @@ func (cf *CondFrame) Eval() (next Frame, err error) {
 	var t SchemeObject
 
 	if cf.Hit != nil { // finally, we matched a condition.
-		next, err = Eval(cf.Hit, cf.Env, cf.Parent)
+		next, err = EvalAndReturn(cf.Hit, cf.Env, cf.Parent)
 		return
 	}
 
@@ -266,6 +266,6 @@ func (cf *CondFrame) Eval() (next Frame, err error) {
 
 	// actually eval a condition.
 
-	next, err = Eval(t, cf.Env, cf)
+	next, err = EvalAndReturn(t, cf.Env, cf)
 	return
 }
