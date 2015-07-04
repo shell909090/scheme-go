@@ -76,7 +76,7 @@ func Display(o *scmgo.Cons, p scmgo.Frame) (r scmgo.SchemeObject, next scmgo.Fra
 		return nil, nil, ErrArguments
 	}
 
-	fmt.Printf("%s", scmgo.SchemeObjectToString(o.Car))
+	fmt.Printf("%s", o.Car.Format())
 	return scmgo.Onil, nil, nil
 }
 

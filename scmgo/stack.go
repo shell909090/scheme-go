@@ -196,7 +196,7 @@ func CreateCondFrame(o *Cons, e *Environ, p Frame) (f Frame) {
 }
 
 func (cf *CondFrame) Format() (r string) {
-	return fmt.Sprintf("Cond:\n%s", SchemeObjectToString(cf.Obj))
+	return fmt.Sprintf("Cond:\n%s", cf.Obj.Format())
 }
 
 func (cf *CondFrame) GetParent() (f Frame) {

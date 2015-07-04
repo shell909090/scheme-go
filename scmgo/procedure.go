@@ -1,10 +1,5 @@
 package scmgo
 
-import (
-	"fmt"
-	"io"
-)
-
 type Procedure interface {
 	SchemeObject
 	IsApplicativeOrder() bool
@@ -30,17 +25,15 @@ func (ip *InternalProcedure) Eval(env *Environ, p Frame) (r SchemeObject, next F
 }
 
 func (ip *InternalProcedure) Apply(o *Cons, p Frame) (r SchemeObject, next Frame, err error) {
-	log.Info("apply internal %s, argument: %s", ip.Name, SchemeObjectToString(o))
+	log.Info("apply internal %s, argument: %s", ip.Name, o.Format())
 	r, next, err = ip.f(o, p)
-	log.Info("result: %s, next: %p", SchemeObjectToString(r), next)
+	// FIXME:
+	// log.Info("result: %s, next: %p", r.Format(), next)
 	return
 }
 
-func (ip *InternalProcedure) Format(s io.Writer, lv int) (rv int, err error) {
-	s.Write([]byte("!"))
-	rv, err = s.Write([]byte(ip.Name))
-	rv += lv + 1
-	return
+func (ip *InternalProcedure) Format() (r string) {
+	return "!" + ip.Name
 }
 
 type LambdaProcedure struct {
@@ -104,19 +97,16 @@ func (lp *LambdaProcedure) Apply(o *Cons, p Frame) (r SchemeObject, next Frame, 
 	if err != nil {
 		return
 	}
-	log.Info("apply lambda %s", SchemeObjectToString(lp))
+	log.Info("apply lambda %s", lp.Format())
 	// coming from apply, so pass this frame.
 	next = CreateBeginFrame(lp.Obj, lp.Env.Fork(names), p.GetParent())
 	return
 }
 
-func (lp *LambdaProcedure) Format(s io.Writer, lv int) (rv int, err error) {
+func (lp *LambdaProcedure) Format() (r string) {
 	name := lp.Name
 	if name == "" {
 		name = "lambda"
 	}
-	name = fmt.Sprintf("<%s>", name)
-	rv, err = s.Write([]byte(name))
-	rv += lv
-	return
+	return "<" + name + ">"
 }

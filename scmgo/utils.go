@@ -29,19 +29,18 @@ func GetHeadAsSymbol(o *Cons) (s *Symbol, err error) {
 	return
 }
 
-func SchemeObjectToString(o SchemeObject) (s string) {
-	if o == nil {
-		return ""
-	}
-
-	buf := bytes.NewBuffer(nil)
-	_, err := o.Format(buf, 0)
-	if err != nil {
-		log.Error("%s", err)
-		return "<unknown>"
-	}
-	return buf.String()
-}
+// func SchemeObjectToString(o SchemeObject) (s string) {
+// 	if o == nil {
+// 		return ""
+// 	}
+// 	buf := bytes.NewBuffer(nil)
+// 	_, err := o.Format(buf, 0)
+// 	if err != nil {
+// 		log.Error("%s", err)
+// 		return "<unknown>"
+// 	}
+// 	return buf.String()
+// }
 
 func StackFormatter(f Frame) (r string) {
 	buf := bytes.NewBuffer(nil)

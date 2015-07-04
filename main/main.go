@@ -60,7 +60,7 @@ func parse() (code scmgo.SchemeObject, err error) {
 		return
 	}
 
-	code.Format(os.Stdout, 0)
+	os.Stdout.WriteString(code.Format())
 	os.Stdout.Write([]byte("\n"))
 	return
 }
@@ -72,23 +72,23 @@ func translate(src scmgo.SchemeObject) (code scmgo.SchemeObject, err error) {
 		return
 	}
 
-	os.Stdout.Write([]byte("-------translate-------\n"))
-	code.Format(os.Stdout, 0)
-	os.Stdout.Write([]byte("\n"))
+	os.Stdout.WriteString("-------translate-------\n")
+	os.Stdout.WriteString(code.Format())
+	os.Stdout.WriteString("\n")
 	return
 }
 
 func run(code scmgo.SchemeObject) (result scmgo.SchemeObject, err error) {
-	os.Stdout.Write([]byte("-------runtime-------\n"))
+	os.Stdout.WriteString("-------runtime-------\n")
 	result, err = scmgo.RunCode(code)
 	if err != nil {
 		log.Error("%s", err)
 		return
 	}
-	os.Stdout.Write([]byte("-------output-------\n"))
+	os.Stdout.WriteString("-------output-------\n")
 
-	result.Format(os.Stdout, 0)
-	os.Stdout.Write([]byte("\n"))
+	os.Stdout.WriteString(result.Format())
+	os.Stdout.WriteString("\n")
 	return
 }
 
