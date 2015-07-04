@@ -22,9 +22,9 @@ func RunCode(code SchemeObject) (result SchemeObject, err error) {
 	}
 
 	env := &Environ{Parent: nil, Names: DefaultNames}
-	env = &Environ{Parent: env, Names: make(map[string]SchemeObject)}
-
 	var f Frame = &EndFrame{Env: env}
+
+	env = &Environ{Parent: env, Names: make(map[string]SchemeObject)}
 	f = CreateBeginFrame(progn, env, f)
 
 	result, err = Trampoline(f)

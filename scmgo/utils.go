@@ -53,6 +53,27 @@ func StackFormatter(f Frame) (r string) {
 	return buf.String()
 }
 
+func Eval(i SchemeObject, e *Environ, p Frame) (next Frame, err error) {
+	// return result to frame
+	var t SchemeObject
+	t, next, err = i.Eval(e, p)
+	if err != nil {
+		log.Error("%s", err)
+		return
+	}
+
+	if next != nil {
+		return
+	}
+	next = p
+
+	err = next.Return(t)
+	if err != nil {
+		log.Error("%s", err)
+	}
+	return
+}
+
 func EvalMaybeInFrame(i SchemeObject, e *Environ, p Frame) (r SchemeObject, next Frame, err error) {
 	r, next, err = i.Eval(e, p)
 	return

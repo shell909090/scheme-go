@@ -36,45 +36,6 @@ func (ef *EndFrame) Eval() (next Frame, err error) {
 	return nil, ErrUnknown
 }
 
-// type EvalFrame struct {
-// 	Parent Frame
-// 	Obj    SchemeObject
-// 	Env    *Environ
-// }
-
-// func CreateEvalFrame(o SchemeObject, e *Environ, p Frame) (f Frame) {
-// 	return &EvalFrame{Parent: p, Obj: o, Env: e}
-// }
-
-// func (ef *EvalFrame) Format() (r string) {
-// 	return fmt.Sprintf("Eval: {%s}", SchemeObjectToString(ef.Obj))
-// }
-
-// func (ef *EvalFrame) GetParent() (f Frame) {
-// 	return ef.Parent
-// }
-
-// func (ef *EvalFrame) GetEnv() (e *Environ) {
-// 	return ef.Env
-// }
-
-// func (ef *EvalFrame) Return(i SchemeObject) (err error) {
-// 	return ErrUnknown
-// }
-
-// func (ef *EvalFrame) Eval(i SchemeObject) (r SchemeObject, next Frame, err error) {
-// 	log.Info("eval: {%s}", SchemeObjectToString(ef.Obj))
-// 	r, next, err = ef.Obj.Eval(ef.Env, ef.Parent)
-// 	if next == nil {
-// 		next = ef.Parent
-// 	}
-// 	if err != nil {
-// 		log.Error("%s", err)
-// 		return
-// 	}
-// 	return
-// }
-
 type BeginFrame struct {
 	Parent Frame
 	Obj    *Cons
@@ -106,7 +67,7 @@ func (bf *BeginFrame) Return(i SchemeObject) (err error) {
 }
 
 func (bf *BeginFrame) Eval() (next Frame, err error) {
-	var t, obj SchemeObject
+	var obj SchemeObject
 
 	for {
 		switch {
@@ -115,15 +76,7 @@ func (bf *BeginFrame) Eval() (next Frame, err error) {
 		case bf.Obj.Cdr == Onil: // jump
 			obj := bf.Obj.Car
 
-			t, next, err = obj.Eval(bf.Env, bf.Parent)
-			if err != nil {
-				return
-			}
-			if next != nil {
-				return
-			}
-			next = bf.Parent
-			err = next.Return(t)
+			next, err = Eval(obj, bf.Env, bf.Parent)
 			return
 		default: // eval
 			obj, bf.Obj, err = bf.Obj.Pop()
@@ -132,7 +85,11 @@ func (bf *BeginFrame) Eval() (next Frame, err error) {
 			}
 
 			_, next, err = obj.Eval(bf.Env, bf)
-			if err != nil || next != nil {
+			if err != nil {
+				log.Error("%s", err)
+				return
+			}
+			if next != nil {
 				return
 			}
 		}
@@ -208,6 +165,7 @@ func (af *ApplyFrame) Eval() (next Frame, err error) {
 
 		t, next, err = obj.Eval(af.Env, af)
 		if err != nil {
+			log.Error("%s", err)
 			return
 		}
 		if next != nil { // if had to call next frame, quit to call
@@ -283,21 +241,7 @@ func (cf *CondFrame) Eval() (next Frame, err error) {
 	var t SchemeObject
 
 	if cf.Hit != nil { // finally, we matched a condition.
-		t, next, err = cf.Hit.Eval(cf.Env, cf.Parent)
-		if err != nil {
-			log.Error("%s", err)
-			return
-		}
-		if next != nil {
-			return
-		}
-
-		next = cf.Parent
-		err = next.Return(t)
-		if err != nil {
-			log.Error("%s", err)
-			return
-		}
+		next, err = Eval(cf.Hit, cf.Env, cf.Parent)
 		return
 	}
 
@@ -321,15 +265,7 @@ func (cf *CondFrame) Eval() (next Frame, err error) {
 	}
 
 	// actually eval a condition.
-	t, next, err = t.Eval(cf.Env, cf)
-	if err != nil {
-		log.Error("%s", err)
-		return
-	}
-	if next != nil {
-		return
-	}
 
-	err = cf.Return(t)
+	next, err = Eval(t, cf.Env, cf)
 	return
 }
