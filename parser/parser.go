@@ -36,6 +36,20 @@ func StringToNumber(chunk string) (obj scmgo.SchemeObject, err error) {
 	return
 }
 
+func objsToList(objs []scmgo.SchemeObject) (code scmgo.SchemeObject, err error) {
+	if len(objs) > 0 {
+		last, ok := objs[len(objs)-1].(*scmgo.Quote)
+		if ok && last.Objs == nil {
+			return nil, ErrQuoteInEnd
+		}
+	}
+	code = scmgo.Onil
+	for i := len(s) - 1; i >= 0; i-- {
+		code = &scmgo.Cons{Car: s[i], Cdr: code}
+	}
+	return
+}
+
 func Code(cin chan string) (code scmgo.SchemeObject, err error) {
 	var obj scmgo.SchemeObject
 	var objs []scmgo.SchemeObject
@@ -59,18 +73,14 @@ func Code(cin chan string) (code scmgo.SchemeObject, err error) {
 		case ';': // Comment
 			obj = nil
 		case '(': // Cons
-			// obj, err = Code(cin)
 			stack = append(stack, objs)
 			objs = nil
+			continue
 		case ')': // return Cons
 			if len(stack) == 0 {
 				return nil, ErrParenthesisNotClose
 			}
 			obj, err = objsToList(objs)
-			if err != nil {
-				log.Error("%s", err)
-				return
-			}
 			objs = stack[len(stack)-1]
 			stack = stack[:len(stack)-1]
 		default: // Symbol
@@ -96,24 +106,9 @@ func Code(cin chan string) (code scmgo.SchemeObject, err error) {
 
 		objs = append(objs, obj)
 	}
+
+	if len(stack) != 0 {
+		return nil, ErrParenthesisNotClose
+	}
 	return objsToList(objs)
-}
-
-func objsToList(objs []scmgo.SchemeObject) (code scmgo.SchemeObject, err error) {
-	if len(objs) > 0 {
-		o := objs[len(objs)-1]
-		if last, ok := o.(*scmgo.Quote); ok && last.Objs == nil {
-			return nil, ErrQuoteInEnd
-		}
-	}
-
-	return ListFromSlice(objs), nil
-}
-
-func ListFromSlice(s []scmgo.SchemeObject) (o scmgo.SchemeObject) {
-	o = scmgo.Onil
-	for i := len(s) - 1; i >= 0; i-- {
-		o = &scmgo.Cons{Car: s[i], Cdr: o}
-	}
-	return o
 }
