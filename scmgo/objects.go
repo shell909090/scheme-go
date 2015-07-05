@@ -47,18 +47,6 @@ func (o *Quote) Format() (r string) {
 	return "'" + o.Objs.Format()
 }
 
-type Comment struct {
-	Content string
-}
-
-func (c *Comment) Eval(env *Environ, p Frame) (r SchemeObject, next Frame, err error) {
-	return nil, nil, ErrUnknown
-}
-
-func (c *Comment) Format() (r string) {
-	return ";" + c.Content
-}
-
 type Boolean bool
 
 func (o Boolean) Eval(env *Environ, p Frame) (r SchemeObject, next Frame, err error) {
@@ -137,7 +125,7 @@ func (o *Cons) Eval(env *Environ, p Frame) (r SchemeObject, next Frame, err erro
 	if next != nil {
 		return
 	}
-	// get return now
+	// get return immediately
 	next = p
 	err = next.Return(procedure)
 	return
@@ -153,20 +141,6 @@ func (o *Cons) Format() (r string) {
 	return buf.String()
 }
 
-func (o *Cons) Iter(f func(obj SchemeObject) (e error)) (err error) {
-	ok := true
-	for i := o; i != Onil; i, ok = i.Cdr.(*Cons) {
-		if !ok {
-			return ErrISNotAList
-		}
-		err = f(i.Car)
-		if err != nil {
-			return
-		}
-	}
-	return
-}
-
 func (o *Cons) Pop() (r SchemeObject, next *Cons, err error) {
 	if o == Onil {
 		return nil, nil, ErrListOutOfIndex
@@ -177,11 +151,36 @@ func (o *Cons) Pop() (r SchemeObject, next *Cons, err error) {
 		return nil, nil, ErrISNotAList
 	}
 	return
-}
+} // O(1)
 
 func (o *Cons) Push(i SchemeObject) (next *Cons) {
 	return &Cons{Car: i, Cdr: o}
-}
+} // O(1)
+
+func (o *Cons) IsImproper() bool {
+	ok := true
+	for i := o; i != Onil; i, ok = i.Cdr.(*Cons) {
+		if !ok {
+			return true
+		}
+	}
+	return false
+} // O(n)
+
+func (o *Cons) Iter(f func(obj SchemeObject) (e error)) (err error) {
+	ok := true
+	for i := o; i != Onil; i, ok = i.Cdr.(*Cons) {
+		if !ok {
+			err = f(i.Cdr)
+			return
+		}
+		err = f(i.Car)
+		if err != nil {
+			return
+		}
+	}
+	return
+} // O(n)
 
 func (o *Cons) Len() (n int, err error) {
 	err = o.Iter(func(obj SchemeObject) (e error) {
@@ -189,7 +188,7 @@ func (o *Cons) Len() (n int, err error) {
 		return
 	})
 	return
-}
+} // O(n)
 
 func (o *Cons) GetN(n int) (r SchemeObject, err error) {
 	var ok bool
@@ -207,4 +206,4 @@ func (o *Cons) GetN(n int) (r SchemeObject, err error) {
 		}
 	}
 	return c.Car, nil
-}
+} // O(n)

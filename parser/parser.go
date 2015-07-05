@@ -36,6 +36,31 @@ func StringToNumber(chunk string) (obj scmgo.SchemeObject, err error) {
 	return
 }
 
+func convertDotPair(list *scmgo.Cons) (result *scmgo.Cons) {
+	f, c, err := list.Pop()
+	if err != nil {
+		return list
+	}
+
+	s, c, err := c.Pop()
+	if err != nil {
+		return list
+	}
+	if sym, ok := s.(*scmgo.Symbol); !ok || sym.Name != "." {
+		return list
+	} // secondary element not dot
+
+	t, c, err := c.Pop()
+	if err != nil {
+		return list
+	}
+
+	if c != scmgo.Onil {
+		return list
+	} // list not end
+	return &scmgo.Cons{Car: f, Cdr: t} // all matched
+}
+
 func listToObj(list *scmgo.Cons) (obj scmgo.SchemeObject, err error) {
 	if list.Car != nil {
 		last, ok := list.Car.(*scmgo.Quote)
@@ -43,7 +68,12 @@ func listToObj(list *scmgo.Cons) (obj scmgo.SchemeObject, err error) {
 			return nil, ErrQuoteInEnd
 		}
 	}
-	return scmgo.ReverseList(list)
+	list, err = scmgo.ReverseList(list)
+	if err != nil {
+		log.Error("%s", err)
+		return
+	}
+	return convertDotPair(list), nil
 }
 
 func popup(ilist, istack *scmgo.Cons) (obj scmgo.SchemeObject, list, stack *scmgo.Cons, err error) {
@@ -91,7 +121,8 @@ func Code(cin chan string) (code scmgo.SchemeObject, err error) {
 		case '\'': // Quote
 			obj = new(scmgo.Quote)
 		case ';': // Comment
-			obj = &scmgo.Comment{Content: chunk[1 : len(chunk)-1]}
+			// obj = &scmgo.Comment{Content: chunk[1 : len(chunk)-1]}
+			continue // no comments
 		case '(': // Cons
 			stack = stack.Push(list)
 			list = scmgo.Onil

@@ -8,31 +8,33 @@ import (
 
 var ErrQuit = errors.New("quit")
 
-func AnyList(o *Cons) (yes bool, err error) {
-	err = o.Iter(func(obj SchemeObject) (e error) {
-		_, yes = obj.(*Cons)
-		if yes {
-			e = ErrQuit
+func AnyList(o *Cons) (yes bool) {
+	ok := true
+	for i := o; i != Onil; {
+		if _, yes = i.Car.(*Cons); yes {
+			return yes
 		}
-		return
-	})
-	if err == ErrQuit {
-		err = nil
+		i, ok = i.Cdr.(*Cons)
+		if !ok {
+			return false
+		}
 	}
 	return
 }
 
-func formatOneLineList(o *Cons) (r string, err error) {
+func formatOneLineList(o *Cons) (r string) {
 	strs := make([]string, 0)
-	err = o.Iter(func(obj SchemeObject) (e error) {
-		strs = append(strs, obj.Format())
-		return
-	})
-	if err != nil {
-		log.Error("%s", err)
-		return
+	for i := o; i != Onil; {
+		strs = append(strs, i.Car.Format())
+		t, ok := i.Cdr.(*Cons)
+		if !ok {
+			strs = append(strs, ".")
+			strs = append(strs, i.Cdr.Format())
+			break
+		}
+		i = t
 	}
-	return "(" + strings.Join(strs, " ") + ")", nil
+	return "(" + strings.Join(strs, " ") + ")"
 }
 
 func formatMultiLineList(s io.Writer, o *Cons, iv int) (rv int, err error) {
@@ -54,27 +56,14 @@ func formatMultiLineList(s io.Writer, o *Cons, iv int) (rv int, err error) {
 			return
 		}
 
-		if obj != Onil {
-			s.Write([]byte(" "))
-			rv += 1
-		}
+		// this is multi-line, and first element is symbol.
+		// so there MUST have other element,
+		// which at least one of them is an list.
+		s.Write([]byte(" "))
+		rv += 1
 	}
 
-	iv = rv
-	for ok := true; obj != Onil; obj, ok = obj.Cdr.(*Cons) {
-		if !ok {
-			s.Write([]byte(" . "))
-			rv += 3
-
-			rv, err = PrettyFormat(s, obj.Cdr, rv)
-			if err != nil {
-				log.Error("%s", err)
-				return
-			}
-
-			break
-		}
-
+	for iv = rv; obj != Onil; {
 		rv, err = PrettyFormat(s, obj.Car, rv)
 		if err != nil {
 			log.Error("%s", err)
@@ -88,6 +77,20 @@ func formatMultiLineList(s io.Writer, o *Cons, iv int) (rv int, err error) {
 			}
 			rv = iv
 		}
+
+		o, ok := obj.Cdr.(*Cons)
+		if !ok {
+			s.Write([]byte(" . "))
+			rv += 3
+
+			rv, err = PrettyFormat(s, obj.Cdr, rv)
+			if err != nil {
+				log.Error("%s", err)
+				return
+			}
+			break
+		}
+		obj = o
 	}
 
 	s.Write([]byte(")"))
@@ -110,17 +113,8 @@ func PrettyFormat(s io.Writer, i SchemeObject, iv int) (rv int, err error) {
 		return iv + 2, err
 	}
 
-	anycons, err := AnyList(o)
-	if err != nil {
-		log.Error("%s", err)
-		return
-	}
-	if !anycons { // all element in one line
-		str, err = formatOneLineList(o)
-		if err != nil {
-			log.Error("%s", err)
-			return
-		}
+	if !AnyList(o) { // all element in one line
+		str = formatOneLineList(o)
 		s.Write([]byte(str))
 		return iv + len(str), err
 	}

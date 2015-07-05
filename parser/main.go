@@ -5,7 +5,7 @@ import (
 	"io"
 
 	"bitbucket.org/shell909090/scheme-go/scmgo"
-	"github.com/op/go-logging"
+	logging "github.com/op/go-logging"
 )
 
 var (
@@ -23,13 +23,6 @@ var (
 
 func SourceToAST(source io.ReadCloser) (code scmgo.SchemeObject, err error) {
 	cpipe := make(chan string)
-	go func() {
-		err = Grammar(source, cpipe)
-	}()
-	// for chunk, ok := <-cpipe; ok; chunk, ok = <-cpipe {
-	// 	fmt.Println("chunk:", string(chunk))
-	// }
-	// return nil, nil
-
+	go Grammar(source, cpipe) // FIXME: how to return error?
 	return Code(cpipe)
 }
