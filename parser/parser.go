@@ -36,24 +36,44 @@ func StringToNumber(chunk string) (obj scmgo.SchemeObject, err error) {
 	return
 }
 
-func objsToList(objs []scmgo.SchemeObject) (code scmgo.SchemeObject, err error) {
-	if len(objs) > 0 {
-		last, ok := objs[len(objs)-1].(*scmgo.Quote)
+func listToObj(list *scmgo.Cons) (obj scmgo.SchemeObject, err error) {
+	if list.Car != nil {
+		last, ok := list.Car.(*scmgo.Quote)
 		if ok && last.Objs == nil {
 			return nil, ErrQuoteInEnd
 		}
 	}
-	code = scmgo.Onil
-	for i := len(objs) - 1; i >= 0; i-- {
-		code = &scmgo.Cons{Car: objs[i], Cdr: code}
+	return scmgo.ReverseList(list)
+}
+
+func popup(ilist, istack *scmgo.Cons) (obj scmgo.SchemeObject, list, stack *scmgo.Cons, err error) {
+	if stack == scmgo.Onil {
+		return nil, nil, nil, ErrParenthesisNotClose
+	}
+
+	obj, err = listToObj(ilist)
+	if err != nil {
+		log.Error("%s", err)
+		return
+	}
+
+	t, stack, err := istack.Pop()
+	if err != nil {
+		log.Error("%s", err)
+		return
+	}
+
+	list, ok := t.(*scmgo.Cons)
+	if !ok {
+		err = scmgo.ErrUnknown
 	}
 	return
 }
 
 func Code(cin chan string) (code scmgo.SchemeObject, err error) {
 	var obj scmgo.SchemeObject
-	var objs []scmgo.SchemeObject
-	var stack [][]scmgo.SchemeObject
+	list := scmgo.Onil
+	stack := scmgo.Onil
 
 	for chunk, ok := <-cin; ok; chunk, ok = <-cin {
 		switch chunk[0] {
@@ -73,16 +93,11 @@ func Code(cin chan string) (code scmgo.SchemeObject, err error) {
 		case ';': // Comment
 			obj = &scmgo.Comment{Content: chunk[1 : len(chunk)-1]}
 		case '(': // Cons
-			stack = append(stack, objs)
-			objs = nil
+			stack = stack.Push(list)
+			list = scmgo.Onil
 			continue
 		case ')': // return Cons
-			if len(stack) == 0 {
-				return nil, ErrParenthesisNotClose
-			}
-			obj, err = objsToList(objs)
-			objs = stack[len(stack)-1]
-			stack = stack[:len(stack)-1]
+			obj, list, stack, err = popup(list, stack)
 		default: // Symbol
 			obj = &scmgo.Symbol{Name: chunk}
 		}
@@ -93,18 +108,18 @@ func Code(cin chan string) (code scmgo.SchemeObject, err error) {
 		}
 
 		// processing Quote
-		if len(objs) > 0 {
-			if last, ok := objs[len(objs)-1].(*scmgo.Quote); ok {
+		if list.Car != nil {
+			if last, ok := list.Car.(*scmgo.Quote); ok {
 				last.Objs = obj
 				continue
 			}
 		}
 
-		objs = append(objs, obj)
+		list = list.Push(obj)
 	}
 
-	if len(stack) != 0 {
+	if stack != scmgo.Onil {
 		return nil, ErrParenthesisNotClose
 	}
-	return objsToList(objs)
+	return listToObj(list)
 }
