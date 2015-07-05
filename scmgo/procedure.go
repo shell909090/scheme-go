@@ -3,7 +3,7 @@ package scmgo
 type Procedure interface {
 	SchemeObject
 	IsApplicativeOrder() bool
-	Apply(o *Cons, p Frame) (r SchemeObject, next Frame, err error)
+	Apply(o *Cons, f Frame) (r SchemeObject, next Frame, err error)
 }
 
 type InternalProcedure struct {
@@ -16,17 +16,17 @@ func RegisterInternalProcedure(name string, f func(o *Cons, p Frame) (r SchemeOb
 	DefaultNames[name] = &InternalProcedure{Name: name, f: f, applicative: applicative}
 }
 
-func (ip *InternalProcedure) IsApplicativeOrder() bool {
-	return ip.applicative
+func (p *InternalProcedure) IsApplicativeOrder() bool {
+	return p.applicative
 }
 
-func (ip *InternalProcedure) Eval(env *Environ, p Frame) (r SchemeObject, next Frame, err error) {
+func (p *InternalProcedure) Eval(env *Environ, f Frame) (value SchemeObject, next Frame, err error) {
 	panic("run eval of internal procedure")
 }
 
-func (ip *InternalProcedure) Apply(o *Cons, p Frame) (r SchemeObject, next Frame, err error) {
-	log.Info("apply !%s, argument: %s", ip.Name, o.Format())
-	r, next, err = ip.f(o, p)
+func (p *InternalProcedure) Apply(o *Cons, f Frame) (r SchemeObject, next Frame, err error) {
+	log.Info("apply !%s, argument: %s", p.Name, o.Format())
+	r, next, err = p.f(o, f)
 	switch {
 	case next != nil:
 		log.Info("next: %p", next)
@@ -36,8 +36,8 @@ func (ip *InternalProcedure) Apply(o *Cons, p Frame) (r SchemeObject, next Frame
 	return
 }
 
-func (ip *InternalProcedure) Format() (r string) {
-	return "!" + ip.Name
+func (p *InternalProcedure) Format() (r string) {
+	return "!" + p.Name
 }
 
 type LambdaProcedure struct {
@@ -47,20 +47,20 @@ type LambdaProcedure struct {
 	Obj  *Cons
 }
 
-func (lp *LambdaProcedure) IsApplicativeOrder() bool {
+func (p *LambdaProcedure) IsApplicativeOrder() bool {
 	return true
 }
 
-func (lp *LambdaProcedure) Eval(env *Environ, p Frame) (r SchemeObject, next Frame, err error) {
+func (p *LambdaProcedure) Eval(env *Environ, f Frame) (value SchemeObject, next Frame, err error) {
 	panic("run eval of lambda procedure")
 }
 
-func genNames(lp *LambdaProcedure, o *Cons) (r map[string]SchemeObject, err error) {
+func genNames(p *LambdaProcedure, o *Cons) (r map[string]SchemeObject, err error) {
 	var s, s1 *Symbol
 	r = make(map[string]SchemeObject)
 
-	pn := lp.Args // parameters by name
-	pv := o       // parameters by vector
+	pn := p.Args // parameters by name
+	pv := o      // parameters by vector
 
 	for pn != Onil && pv != Onil {
 		s, err = GetHeadAsSymbol(pn)
@@ -96,21 +96,21 @@ func genNames(lp *LambdaProcedure, o *Cons) (r map[string]SchemeObject, err erro
 	return
 }
 
-func (lp *LambdaProcedure) Apply(o *Cons, p Frame) (r SchemeObject, next Frame, err error) {
-	names, err := genNames(lp, o)
+func (p *LambdaProcedure) Apply(o *Cons, f Frame) (r SchemeObject, next Frame, err error) {
+	names, err := genNames(p, o)
 	if err != nil {
 		return
 	}
-	env := lp.Env.Fork(names)
-	log.Info("apply %s, env:\n%s", lp.Format(), env.Format())
+	env := p.Env.Fork(names)
+	log.Info("apply %s, env:\n%s", p.Format(), env.Format())
 	next = CreateBeginFrame(
-		lp.Obj, env,
-		p.GetParent()) // coming from apply, so pass this frame.
+		p.Obj, env,
+		f.GetParent()) // coming from apply, so pass this frame.
 	return
 }
 
-func (lp *LambdaProcedure) Format() (r string) {
-	name := lp.Name
+func (p *LambdaProcedure) Format() (r string) {
+	name := p.Name
 	if name == "" {
 		name = "lambda"
 	}
