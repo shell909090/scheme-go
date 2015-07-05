@@ -8,7 +8,7 @@ import (
 	_ "bitbucket.org/shell909090/scheme-go/internal"
 	"bitbucket.org/shell909090/scheme-go/parser"
 	"bitbucket.org/shell909090/scheme-go/scmgo"
-	"bitbucket.org/shell909090/scheme-go/transformer"
+	"bitbucket.org/shell909090/scheme-go/tsfm"
 	logging "github.com/op/go-logging"
 )
 
@@ -65,14 +65,14 @@ func parse() (code scmgo.SchemeObject, err error) {
 	return
 }
 
-func Transformer(src scmgo.SchemeObject) (code scmgo.SchemeObject, err error) {
-	code, err = transformer.Transformer(src)
+func Transform(src scmgo.SchemeObject) (code scmgo.SchemeObject, err error) {
+	code, err = tsfm.Transform(src)
 	if err != nil {
 		log.Error("%s", err)
 		return
 	}
 
-	os.Stdout.WriteString("-------transformer-------\n")
+	os.Stdout.WriteString("-------transform-------\n")
 	os.Stdout.WriteString(code.Format())
 	os.Stdout.WriteString("\n")
 	return
@@ -96,7 +96,7 @@ func main() {
 	flag.StringVar(&LogLevel, "loglevel", "INFO", "loglevel")
 	flag.StringVar(&LogFile, "logfile", "", "logfile")
 	flag.BoolVar(&Parse, "parse", false, "just parse, not run")
-	flag.BoolVar(&Trans, "translate", false, "just parse and translate, not run")
+	flag.BoolVar(&Trans, "transform", false, "just parse and transform, not run")
 
 	flag.Parse()
 	if len(flag.Args()) < 1 {
@@ -117,7 +117,7 @@ func main() {
 		return
 	}
 
-	code, err = Transformer(code)
+	code, err = Transform(code)
 	if err != nil {
 		log.Error("%s", err)
 		return

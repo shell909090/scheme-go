@@ -1,4 +1,4 @@
-package transformer
+package tsfm
 
 import (
 	"bitbucket.org/shell909090/scheme-go/scmgo"
@@ -24,7 +24,7 @@ func RemoveComment(o *scmgo.Cons) (err error) {
 	return
 }
 
-func Transformer(src scmgo.SchemeObject) (code scmgo.SchemeObject, err error) {
+func Transform(src scmgo.SchemeObject) (code scmgo.SchemeObject, err error) {
 	code = src
 	c, ok := code.(*scmgo.Cons)
 	if !ok {

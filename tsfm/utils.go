@@ -1,4 +1,4 @@
-package transformer
+package tsfm
 
 import "bitbucket.org/shell909090/scheme-go/scmgo"
 
