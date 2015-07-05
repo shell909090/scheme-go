@@ -46,45 +46,43 @@ func CreateBeginFrame(o *Cons, e *Environ, p Frame) (f Frame) {
 	return &BeginFrame{Parent: p, Obj: o, Env: e}
 }
 
-func (bf *BeginFrame) Format() (r string) {
-	n, err := bf.Obj.Len()
+func (f *BeginFrame) Format() (r string) {
+	n, err := f.Obj.Len(false)
 	if err != nil {
 		n = 0
 	}
 	return fmt.Sprintf("Begin: %d", n)
 }
 
-func (bf *BeginFrame) GetParent() (p Frame) {
-	return bf.Parent
+func (f *BeginFrame) GetParent() (p Frame) {
+	return f.Parent
 }
 
-func (bf *BeginFrame) GetEnv() (e *Environ) {
-	return bf.Env
+func (f *BeginFrame) GetEnv() (e *Environ) {
+	return f.Env
 }
 
-func (bf *BeginFrame) Return(i SchemeObject) (err error) {
+func (f *BeginFrame) Return(i SchemeObject) (err error) {
 	return nil
 }
 
-func (bf *BeginFrame) Exec() (next Frame, err error) {
+func (f *BeginFrame) Exec() (next Frame, err error) {
 	var obj SchemeObject
 
 	for {
 		switch {
-		case bf.Obj == Onil: // FIXME: not make sense
-			return bf.Parent, nil
-		case bf.Obj.Cdr == Onil: // jump
-			obj := bf.Obj.Car
-
-			return EvalAndReturn(obj, bf.Env, bf.Parent)
+		case f.Obj == Onil: // FIXME: not make sense
+			return f.Parent, nil
+		case f.Obj.Cdr == Onil: // jump
+			return EvalAndReturn(f.Obj.Car, f.Env, f.Parent)
 		default: // eval
-			obj, bf.Obj, err = bf.Obj.Pop()
+			obj, f.Obj, err = f.Obj.Pop(false)
 			if err != nil {
 				log.Error("%s", err)
 				return
 			}
 
-			_, next, err = obj.Eval(bf.Env, bf)
+			_, next, err = obj.Eval(f.Env, f)
 			if err != nil {
 				log.Error("%s", err)
 				return
@@ -134,8 +132,8 @@ func (f *ApplyFrame) Return(i SchemeObject) (err error) {
 	return
 }
 
-func (f *ApplyFrame) Apply(o *Cons) (next Frame, err error) {
-	t, next, err := f.P.Apply(o, f)
+func (f *ApplyFrame) Apply(args *Cons) (next Frame, err error) {
+	tmp, next, err := f.P.Apply(args, f)
 	if err != nil {
 		log.Error("%s", err)
 		return
@@ -144,7 +142,7 @@ func (f *ApplyFrame) Apply(o *Cons) (next Frame, err error) {
 		return
 	}
 	next = f.Parent
-	err = next.Return(t)
+	err = next.Return(tmp)
 	return
 }
 
@@ -157,7 +155,7 @@ func (f *ApplyFrame) Exec() (next Frame, err error) {
 
 	for f.Args != Onil {
 		// pop up next argument
-		obj, f.Args, err = f.Args.Pop()
+		obj, f.Args, err = f.Args.Pop(false)
 		if err != nil {
 			log.Error("%s", err)
 			return
@@ -206,18 +204,18 @@ func (f *CondFrame) GetEnv() (e *Environ) {
 }
 
 func (f *CondFrame) Return(i SchemeObject) (err error) {
-	var t SchemeObject
+	var tmp SchemeObject
 	b, ok := i.(Boolean)
 	if !ok {
 		return ErrType
 	}
 
 	// pop header condition.
-	t, f.Obj, err = f.Obj.Pop()
+	tmp, f.Obj, err = f.Obj.Pop(false)
 	if err != nil {
 		return
 	}
-	cond, ok := t.(*Cons)
+	cond, ok := tmp.(*Cons)
 	if !ok {
 		return ErrType
 	}
@@ -234,23 +232,23 @@ func (f *CondFrame) Return(i SchemeObject) (err error) {
 func (f *CondFrame) Exec() (next Frame, err error) {
 	var ok bool
 	var cond *Cons
-	var t SchemeObject
+	var tmp SchemeObject
 
 	if f.Hit != nil { // finally, we matched a condition.
 		return EvalAndReturn(f.Hit, f.Env, f.Parent)
 	}
 
 	// get header condition.
-	t = f.Obj.Car
-	cond, ok = t.(*Cons)
+	tmp = f.Obj.Car
+	cond, ok = tmp.(*Cons)
 	if !ok {
 		return nil, ErrType
 	}
 
 	// get first element of condition.
-	t = cond.Car
+	tmp = cond.Car
 
-	if n, ok := t.(*Symbol); ok && n.Name == "else" {
+	if n, ok := tmp.(*Symbol); ok && n.Name == "else" {
 		f.Hit, err = cond.GetN(1)
 		if err != nil {
 			log.Error("%s", err)
@@ -260,5 +258,5 @@ func (f *CondFrame) Exec() (next Frame, err error) {
 	}
 
 	// actually eval a condition.
-	return EvalAndReturn(t, f.Env, f)
+	return EvalAndReturn(tmp, f.Env, f)
 }

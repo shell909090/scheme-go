@@ -16,16 +16,13 @@ func Trampoline(f Frame) (result SchemeObject, err error) {
 }
 
 func RunCode(code SchemeObject) (result SchemeObject, err error) {
-	progn, ok := code.(*Cons)
+	list, ok := code.(*Cons)
 	if !ok {
 		return nil, ErrType
 	}
 
-	env := &Environ{Parent: nil, Names: DefaultNames}
-	var f Frame = &EndFrame{Env: env}
-
-	env = &Environ{Parent: env, Names: make(map[string]SchemeObject)}
-	f = CreateBeginFrame(progn, env, f)
+	env := &Environ{Parent: DefaultEnv, Names: make(map[string]SchemeObject)}
+	f := CreateBeginFrame(list, env, &EndFrame{Env: DefaultEnv})
 
 	result, err = Trampoline(f)
 	if result == nil {

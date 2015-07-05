@@ -109,7 +109,7 @@ var Onil = &Cons{}
 
 func (o *Cons) Eval(env *Environ, f Frame) (value SchemeObject, next Frame, err error) {
 	var procedure SchemeObject
-	procedure, o, err = o.Pop()
+	procedure, o, err = o.Pop(false)
 	if err != nil {
 		return
 	}
@@ -133,22 +133,24 @@ func (o *Cons) Eval(env *Environ, f Frame) (value SchemeObject, next Frame, err 
 
 func (o *Cons) Format() (r string) {
 	buf := bytes.NewBuffer(nil)
-	_, err := PrettyFormat(buf, o, 0)
-	if err != nil {
+	if _, err := PrettyFormat(buf, o, 0); err != nil {
 		log.Error("%s", err)
 		return ""
 	}
 	return buf.String()
 }
 
-func (o *Cons) Pop() (r SchemeObject, next *Cons, err error) {
+func (o *Cons) Pop(improper bool) (r SchemeObject, next *Cons, err error) {
 	if o == Onil {
 		return nil, nil, ErrListOutOfIndex
 	}
 	r = o.Car
 	next, ok := o.Cdr.(*Cons)
 	if !ok {
-		return nil, nil, ErrISNotAList
+		if !improper {
+			return nil, nil, ErrISNotAList
+		}
+		return o.Cdr, Onil, nil
 	}
 	return
 } // O(1)
@@ -167,26 +169,29 @@ func (o *Cons) IsImproper() bool {
 	return false
 } // O(n)
 
-func (o *Cons) Iter(f func(obj SchemeObject) (e error)) (err error) {
+func (o *Cons) Iter(f func(obj SchemeObject) (e error), improper bool) (err error) {
 	ok := true
-	for i := o; i != Onil; i, ok = i.Cdr.(*Cons) {
-		if !ok {
-			err = f(i.Cdr)
-			return
-		}
+	for i := o; i != Onil; {
 		err = f(i.Car)
 		if err != nil {
 			return
+		}
+		i, ok = i.Cdr.(*Cons)
+		if !ok {
+			if !improper {
+				return ErrISNotAList
+			}
+			return f(i.Cdr)
 		}
 	}
 	return
 } // O(n)
 
-func (o *Cons) Len() (n int, err error) {
+func (o *Cons) Len(improper bool) (n int, err error) {
 	err = o.Iter(func(obj SchemeObject) (e error) {
 		n += 1
 		return
-	})
+	}, improper)
 	return
 } // O(n)
 

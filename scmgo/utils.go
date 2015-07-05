@@ -17,8 +17,9 @@ var (
 )
 
 var (
-	log          = logging.MustGetLogger("scmgo")
-	DefaultNames = make(map[string]SchemeObject)
+	log                   = logging.MustGetLogger("scmgo")
+	DefaultNames          = make(map[string]SchemeObject)
+	DefaultEnv   *Environ = &Environ{Parent: nil, Names: DefaultNames}
 )
 
 func GetHeadAsSymbol(o *Cons) (s *Symbol, err error) {
@@ -58,20 +59,18 @@ func EvalAndReturn(i SchemeObject, e *Environ, p Frame) (next Frame, err error) 
 	return
 }
 
-func ReverseList(o *Cons) (result *Cons, err error) {
+func ReverseList(before *Cons) (after *Cons, err error) {
 	var ok bool
-	// image a list from left to right.
-	l := Onil // that's for left.
-	r := o    // and this is right.
-
-	for r != Onil {
-		next := r.Cdr        // record the next one of the left.
-		r.Cdr = l            // turn right back.
-		l = r                // push left forward.
-		r, ok = next.(*Cons) // and push right forward, if can.
+	left := Onil // image a list from left to right.
+	right := before
+	for right != Onil {
+		next := right.Cdr        // record the next one of the left.
+		right.Cdr = left         // turn right back.
+		left = right             // push left forward.
+		right, ok = next.(*Cons) // and push right forward, if can.
 		if !ok {
 			return nil, ErrISNotAList
 		}
 	}
-	return l, nil
+	return left, nil
 }

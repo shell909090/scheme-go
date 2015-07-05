@@ -6,8 +6,8 @@ import (
 	"bitbucket.org/shell909090/scheme-go/scmgo"
 )
 
-func Define(o *scmgo.Cons, p scmgo.Frame) (r scmgo.SchemeObject, next scmgo.Frame, err error) {
-	t, o, err := o.Pop()
+func Define(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
+	t, o, err := o.Pop(false)
 	if err != nil {
 		return
 	}
@@ -21,24 +21,24 @@ func Define(o *scmgo.Cons, p scmgo.Frame) (r scmgo.SchemeObject, next scmgo.Fram
 	if err != nil {
 		return
 	}
-	_, args, err = args.Pop()
+	_, args, err = args.Pop(false)
 	if err != nil {
 		return
 	}
 
-	r = &scmgo.LambdaProcedure{
+	value = &scmgo.LambdaProcedure{
 		Name: name.Name,
-		Env:  p.GetEnv(),
+		Env:  f.GetEnv(),
 		Args: args,
 		Obj:  o,
 	}
 
-	p.GetEnv().Add(name.Name, r)
+	f.GetEnv().Add(name.Name, value)
 	return
 }
 
-func Lambda(o *scmgo.Cons, p scmgo.Frame) (r scmgo.SchemeObject, next scmgo.Frame, err error) {
-	t, o, err := o.Pop()
+func Lambda(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
+	t, o, err := o.Pop(false)
 	if err != nil {
 		return
 	}
@@ -48,39 +48,36 @@ func Lambda(o *scmgo.Cons, p scmgo.Frame) (r scmgo.SchemeObject, next scmgo.Fram
 		return nil, nil, scmgo.ErrType
 	}
 
-	r = &scmgo.LambdaProcedure{
-		Env:  p.GetEnv(),
+	value = &scmgo.LambdaProcedure{
+		Env:  f.GetEnv(),
 		Args: args,
 		Obj:  o,
 	}
 	return
 }
 
-func Cond(o *scmgo.Cons, p scmgo.Frame) (r scmgo.SchemeObject, next scmgo.Frame, err error) {
+func Cond(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
 	// coming from apply, so pass this frame.
-	next = scmgo.CreateCondFrame(o, p.GetEnv(), p.GetParent())
+	next = scmgo.CreateCondFrame(o, f.GetEnv(), f.GetParent())
 	return
 }
 
-func If(o *scmgo.Cons, p scmgo.Frame) (r scmgo.SchemeObject, next scmgo.Frame, err error) {
+func If(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
 	// TODO:
 	return
 }
 
-func Display(o *scmgo.Cons, p scmgo.Frame) (r scmgo.SchemeObject, next scmgo.Frame, err error) {
-	n, err := o.Len()
+func Display(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
+	err = AssertLen(o, 1)
 	if err != nil {
 		return
-	}
-	if n != 1 {
-		return nil, nil, ErrArguments
 	}
 
 	fmt.Printf("%s", o.Car.Format())
 	return scmgo.Onil, nil, nil
 }
 
-func Newline(o *scmgo.Cons, p scmgo.Frame) (r scmgo.SchemeObject, next scmgo.Frame, err error) {
+func Newline(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
 	fmt.Printf("\n")
 	return scmgo.Onil, nil, nil
 }

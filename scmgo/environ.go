@@ -8,31 +8,23 @@ type Environ struct {
 	Names  map[string]SchemeObject
 }
 
-func formatNames(names map[string]SchemeObject) (r string) {
-	str := make([]string, 0)
-	for k, _ := range names {
-		str = append(str, k)
-	}
-	return strings.Join(str, " ")
-}
-
 func (e *Environ) Format() (r string) {
 	str := make([]string, 0)
 	for ce := e; ce != nil; ce = ce.Parent {
-		str = append(str, formatNames(ce.Names))
+		strname := make([]string, 0)
+		for k, _ := range ce.Names {
+			strname = append(strname, k)
+		}
+		str = append(str, strings.Join(strname, " "))
 	}
 	return strings.Join(str, "\n")
 }
 
-func (e *Environ) Fork(r map[string]SchemeObject) (ne *Environ) {
-	if r == nil {
-		r = make(map[string]SchemeObject)
+func (e *Environ) Fork(names map[string]SchemeObject) (ne *Environ) {
+	if names == nil {
+		names = make(map[string]SchemeObject)
 	}
-	ne = &Environ{
-		Parent: e,
-		Names:  r,
-	}
-	return ne
+	return &Environ{Parent: e, Names: names}
 }
 
 func (e *Environ) Add(name string, value SchemeObject) {

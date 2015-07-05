@@ -15,7 +15,7 @@ func Walker(o *scmgo.Cons, f func(o *scmgo.Cons) (err error)) (err error) {
 		}
 		err = Walker(c, f)
 		return
-	})
+	}, false)
 	if err != nil {
 		log.Error("%s", err)
 		return

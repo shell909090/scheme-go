@@ -37,12 +37,12 @@ func StringToNumber(chunk string) (obj scmgo.SchemeObject, err error) {
 }
 
 func convertDotPair(list *scmgo.Cons) (result *scmgo.Cons) {
-	f, c, err := list.Pop()
+	f, c, err := list.Pop(false)
 	if err != nil {
 		return list
 	}
 
-	s, c, err := c.Pop()
+	s, c, err := c.Pop(false)
 	if err != nil {
 		return list
 	}
@@ -50,7 +50,7 @@ func convertDotPair(list *scmgo.Cons) (result *scmgo.Cons) {
 		return list
 	} // secondary element not dot
 
-	t, c, err := c.Pop()
+	t, c, err := c.Pop(false)
 	if err != nil {
 		return list
 	}
@@ -87,7 +87,7 @@ func popup(ilist, istack *scmgo.Cons) (obj scmgo.SchemeObject, list, stack *scmg
 		return
 	}
 
-	t, stack, err := istack.Pop()
+	t, stack, err := istack.Pop(false)
 	if err != nil {
 		log.Error("%s", err)
 		return

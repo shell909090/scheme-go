@@ -2,36 +2,30 @@ package internal
 
 import "bitbucket.org/shell909090/scheme-go/scmgo"
 
-func MakeCons(o *scmgo.Cons, p scmgo.Frame) (r scmgo.SchemeObject, next scmgo.Frame, err error) {
-	n, err := o.Len()
-	if err != nil {
-		return
-	}
-	if n != 2 {
-		return nil, nil, ErrArguments
-	}
-
-	t1, o, err := o.Pop()
+func MakeCons(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
+	err = AssertLen(o, 2)
 	if err != nil {
 		return
 	}
 
-	t2, o, err := o.Pop()
+	t1, o, err := o.Pop(false)
 	if err != nil {
 		return
 	}
 
-	r = &scmgo.Cons{Car: t1, Cdr: t2}
+	t2, o, err := o.Pop(false)
+	if err != nil {
+		return
+	}
+
+	value = &scmgo.Cons{Car: t1, Cdr: t2}
 	return
 }
 
-func Car(o *scmgo.Cons, p scmgo.Frame) (r scmgo.SchemeObject, next scmgo.Frame, err error) {
-	n, err := o.Len()
+func Car(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
+	err = AssertLen(o, 1)
 	if err != nil {
 		return
-	}
-	if n != 1 {
-		return nil, nil, ErrArguments
 	}
 
 	t, ok := o.Car.(*scmgo.Cons)
@@ -39,17 +33,14 @@ func Car(o *scmgo.Cons, p scmgo.Frame) (r scmgo.SchemeObject, next scmgo.Frame, 
 		return nil, nil, scmgo.ErrType
 	}
 
-	r = t.Car
+	value = t.Car
 	return
 }
 
-func Cdr(o *scmgo.Cons, p scmgo.Frame) (r scmgo.SchemeObject, next scmgo.Frame, err error) {
-	n, err := o.Len()
+func Cdr(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
+	err = AssertLen(o, 1)
 	if err != nil {
 		return
-	}
-	if n != 1 {
-		return nil, nil, ErrArguments
 	}
 
 	t, ok := o.Car.(*scmgo.Cons)
@@ -57,17 +48,14 @@ func Cdr(o *scmgo.Cons, p scmgo.Frame) (r scmgo.SchemeObject, next scmgo.Frame, 
 		return nil, nil, scmgo.ErrType
 	}
 
-	r = t.Cdr
+	value = t.Cdr
 	return
 }
 
-func IsNull(o *scmgo.Cons, p scmgo.Frame) (r scmgo.SchemeObject, next scmgo.Frame, err error) {
-	n, err := o.Len()
+func IsNull(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
+	err = AssertLen(o, 1)
 	if err != nil {
 		return
-	}
-	if n != 1 {
-		return nil, nil, ErrArguments
 	}
 
 	t, ok := o.Car.(*scmgo.Cons)

@@ -7,14 +7,14 @@ func anyFloat(i *scmgo.Cons) (yes bool, err error) {
 		switch obj.(type) {
 		case scmgo.Float:
 			yes = true
-			e = scmgo.ErrUnknown
+			e = ErrQuit
 		case scmgo.Integer:
 		default:
 			e = scmgo.ErrType
 		}
 		return
-	})
-	if err == scmgo.ErrUnknown {
+	}, false)
+	if err == ErrQuit {
 		err = nil
 	}
 	return
@@ -30,14 +30,12 @@ func ObjToFloat(i scmgo.SchemeObject) (f float64) {
 	return
 }
 
-func IsNumber(o *scmgo.Cons, p scmgo.Frame) (r scmgo.SchemeObject, next scmgo.Frame, err error) {
-	n, err := o.Len()
+func IsNumber(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
+	err = AssertLen(o, 1)
 	if err != nil {
 		return
 	}
-	if n != 1 {
-		return nil, nil, ErrArguments
-	}
+
 	switch o.Car.(type) {
 	case scmgo.Integer, scmgo.Float:
 		return scmgo.Otrue, nil, nil
@@ -45,14 +43,12 @@ func IsNumber(o *scmgo.Cons, p scmgo.Frame) (r scmgo.SchemeObject, next scmgo.Fr
 	return scmgo.Ofalse, nil, nil
 }
 
-func IsInteger(o *scmgo.Cons, p scmgo.Frame) (r scmgo.SchemeObject, next scmgo.Frame, err error) {
-	n, err := o.Len()
+func IsInteger(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
+	err = AssertLen(o, 1)
 	if err != nil {
 		return
 	}
-	if n != 1 {
-		return nil, nil, ErrArguments
-	}
+
 	switch o.Car.(type) {
 	case scmgo.Integer:
 		return scmgo.Otrue, nil, nil
@@ -60,45 +56,45 @@ func IsInteger(o *scmgo.Cons, p scmgo.Frame) (r scmgo.SchemeObject, next scmgo.F
 	return scmgo.Ofalse, nil, nil
 }
 
-func Add(o *scmgo.Cons, p scmgo.Frame) (r scmgo.SchemeObject, next scmgo.Frame, err error) {
-	f, err := anyFloat(o)
+func Add(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
+	any, err := anyFloat(o)
 	if err != nil {
 		return
 	}
 
-	if f {
+	if any {
 		var s float64
 		err = o.Iter(func(obj scmgo.SchemeObject) (e error) {
 			s += ObjToFloat(obj)
 			return
-		})
+		}, false)
 		if err != nil {
 			return
 		}
-		r = scmgo.Float(s)
+		value = scmgo.Float(s)
 	} else {
 		var s int
 		err = o.Iter(func(obj scmgo.SchemeObject) (e error) {
 			s += int(obj.(scmgo.Integer))
 			return
-		})
+		}, false)
 		if err != nil {
 			return
 		}
-		r = scmgo.Integer(s)
+		value = scmgo.Integer(s)
 	}
 	return
 }
 
-func Dec(o *scmgo.Cons, p scmgo.Frame) (r scmgo.SchemeObject, next scmgo.Frame, err error) {
+func Dec(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
 	var t scmgo.SchemeObject
-	f, err := anyFloat(o)
+	any, err := anyFloat(o)
 	if err != nil {
 		return
 	}
 
-	if f {
-		t, o, err = o.Pop()
+	if any {
+		t, o, err = o.Pop(false)
 		if err != nil {
 			return
 		}
@@ -107,13 +103,13 @@ func Dec(o *scmgo.Cons, p scmgo.Frame) (r scmgo.SchemeObject, next scmgo.Frame, 
 		err = o.Iter(func(obj scmgo.SchemeObject) (e error) {
 			s -= ObjToFloat(obj)
 			return
-		})
+		}, false)
 		if err != nil {
 			return
 		}
-		r = scmgo.Float(s)
+		value = scmgo.Float(s)
 	} else {
-		t, o, err = o.Pop()
+		t, o, err = o.Pop(false)
 		if err != nil {
 			return
 		}
@@ -122,25 +118,25 @@ func Dec(o *scmgo.Cons, p scmgo.Frame) (r scmgo.SchemeObject, next scmgo.Frame, 
 		err = o.Iter(func(obj scmgo.SchemeObject) (e error) {
 			s -= int(obj.(scmgo.Integer))
 			return
-		})
+		}, false)
 		if err != nil {
 			return
 		}
-		r = scmgo.Integer(s)
+		value = scmgo.Integer(s)
 	}
 
 	return
 }
 
-func Mul(o *scmgo.Cons, p scmgo.Frame) (r scmgo.SchemeObject, next scmgo.Frame, err error) {
+func Mul(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
 	var t scmgo.SchemeObject
-	f, err := anyFloat(o)
+	any, err := anyFloat(o)
 	if err != nil {
 		return
 	}
 
-	if f {
-		t, o, err = o.Pop()
+	if any {
+		t, o, err = o.Pop(false)
 		if err != nil {
 			return
 		}
@@ -149,13 +145,13 @@ func Mul(o *scmgo.Cons, p scmgo.Frame) (r scmgo.SchemeObject, next scmgo.Frame, 
 		err = o.Iter(func(obj scmgo.SchemeObject) (e error) {
 			s *= ObjToFloat(obj)
 			return
-		})
+		}, false)
 		if err != nil {
 			return
 		}
-		r = scmgo.Float(s)
+		value = scmgo.Float(s)
 	} else {
-		t, o, err = o.Pop()
+		t, o, err = o.Pop(false)
 		if err != nil {
 			return
 		}
@@ -164,18 +160,18 @@ func Mul(o *scmgo.Cons, p scmgo.Frame) (r scmgo.SchemeObject, next scmgo.Frame, 
 		err = o.Iter(func(obj scmgo.SchemeObject) (e error) {
 			s *= int(obj.(scmgo.Integer))
 			return
-		})
+		}, false)
 		if err != nil {
 			return
 		}
-		r = scmgo.Integer(s)
+		value = scmgo.Integer(s)
 	}
 	return
 }
 
-func Div(o *scmgo.Cons, p scmgo.Frame) (r scmgo.SchemeObject, next scmgo.Frame, err error) {
+func Div(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
 	var t scmgo.SchemeObject
-	t, o, err = o.Pop()
+	t, o, err = o.Pop(false)
 	if err != nil {
 		return
 	}
@@ -184,11 +180,11 @@ func Div(o *scmgo.Cons, p scmgo.Frame) (r scmgo.SchemeObject, next scmgo.Frame, 
 	err = o.Iter(func(obj scmgo.SchemeObject) (e error) {
 		s /= ObjToFloat(obj)
 		return
-	})
+	}, false)
 	if err != nil {
 		return
 	}
-	r = scmgo.Float(s)
+	value = scmgo.Float(s)
 	return
 }
 
