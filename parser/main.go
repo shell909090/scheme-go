@@ -22,7 +22,10 @@ var (
 )
 
 func SourceToAST(source io.ReadCloser) (code scmgo.SchemeObject, err error) {
-	cpipe := make(chan string)
-	go Grammar(source, cpipe) // FIXME: how to return error?
-	return Code(cpipe)
+	p := CreateParser()
+	err = Grammar(source, p)
+	if err != nil {
+		return
+	}
+	return p.GetCode()
 }

@@ -41,46 +41,57 @@ func readString(src *bufio.Reader) (s string, err error) {
 	return
 }
 
-func Grammar(source io.ReadCloser, cout chan string) (err error) {
+func Grammar(source io.ReadCloser, p *Parser) (err error) {
 	src := bufio.NewReader(source)
 	defer source.Close()
-	defer close(cout)
 
 	// performance
-	var symbolbuf []rune
-	for c, _, err := src.ReadRune(); err == nil; c, _, err = src.ReadRune() {
+	var symbolbuf []byte
+	var str string
+	var c byte
+	for c, err = src.ReadByte(); err == nil; c, err = src.ReadByte() {
 		switch c {
 		case '(', ')', '\'': // control chars
 			if symbolbuf != nil {
-				cout <- string(symbolbuf)
+				_, err = p.Write(symbolbuf)
+				if err != nil {
+					return
+				}
 				symbolbuf = nil
 			}
-			cout <- string(c)
+			_, err = p.Write([]byte{c})
 		case ' ', '\n', '\r', '\t': // empty chars
 			if symbolbuf != nil {
-				cout <- string(symbolbuf)
+				_, err = p.Write(symbolbuf)
+				if err != nil {
+					return
+				}
 				symbolbuf = nil
 			}
 		case '"': // string
 			if symbolbuf != nil {
 				return ErrQuotaInSymbol
 			}
-			line, err := readString(src)
+			str, err = readString(src)
 			if err != nil {
-				return err
+				return
 			}
-			cout <- line
+			err = p.ReceiveChunk(str)
 		case ';': // comment
 			if symbolbuf != nil {
 				return ErrCommentInSymbol
 			}
-			s, err := src.ReadString('\n')
+			str, err = src.ReadString('\n')
 			if err != nil {
-				return err
+				return
 			}
-			cout <- ";" + s
+			err = p.ReceiveChunk(";" + str)
 		default: // symbol
 			symbolbuf = append(symbolbuf, c)
+		}
+		if err != nil {
+			log.Error("%s", err)
+			return
 		}
 	}
 

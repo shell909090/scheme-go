@@ -76,81 +76,101 @@ func listToObj(list *scmgo.Cons) (obj scmgo.SchemeObject, err error) {
 	return convertDotPair(list), nil
 }
 
-func popup(ilist, istack *scmgo.Cons) (obj scmgo.SchemeObject, list, stack *scmgo.Cons, err error) {
-	if stack == scmgo.Onil {
-		return nil, nil, nil, ErrParenthesisNotClose
+type Parser struct {
+	list  *scmgo.Cons
+	stack *scmgo.Cons
+}
+
+func CreateParser() (p *Parser) {
+	return &Parser{list: scmgo.Onil, stack: scmgo.Onil}
+}
+
+func (p *Parser) popup() (obj scmgo.SchemeObject, err error) {
+	var ok bool
+	var t scmgo.SchemeObject
+
+	if p.stack == scmgo.Onil {
+		return nil, ErrParenthesisNotClose
 	}
 
-	obj, err = listToObj(ilist)
+	obj, err = listToObj(p.list)
 	if err != nil {
 		log.Error("%s", err)
 		return
 	}
 
-	t, stack, err := istack.Pop(false)
+	t, p.stack, err = p.stack.Pop(false)
 	if err != nil {
 		log.Error("%s", err)
 		return
 	}
 
-	list, ok := t.(*scmgo.Cons)
+	p.list, ok = t.(*scmgo.Cons)
 	if !ok {
 		err = scmgo.ErrUnknown
 	}
 	return
 }
 
-func Code(cin chan string) (code scmgo.SchemeObject, err error) {
+func (p *Parser) Write(b []byte) (n int, err error) {
+	err = p.ReceiveChunk(string(b))
+	if err != nil {
+		return
+	}
+	n = len(b)
+	return
+}
+
+func (p *Parser) ReceiveChunk(chunk string) (err error) {
 	var obj scmgo.SchemeObject
-	list := scmgo.Onil
-	stack := scmgo.Onil
 
-	for chunk, ok := <-cin; ok; chunk, ok = <-cin {
-		switch chunk[0] {
-		case '#': // Boolean
-			obj, err = StringToBoolean(chunk)
-		case '"': // String
-			obj = scmgo.String(chunk[1 : len(chunk)-1])
-		case '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
-			if chunk[0] == '-' && len(chunk) == 1 {
-				// - without number is symbol
-				obj = &scmgo.Symbol{Name: chunk}
-			} else { // Integer & Float
-				obj, err = StringToNumber(chunk)
-			}
-		case '\'': // Quote
-			obj = new(scmgo.Quote)
-		case ';': // Comment
-			// obj = &scmgo.Comment{Content: chunk[1 : len(chunk)-1]}
-			continue // no comments
-		case '(': // Cons
-			stack = stack.Push(list)
-			list = scmgo.Onil
-			continue
-		case ')': // return Cons
-			obj, list, stack, err = popup(list, stack)
-		default: // Symbol
+	switch chunk[0] {
+	case '#': // Boolean
+		obj, err = StringToBoolean(chunk)
+	case '"': // String
+		obj = scmgo.String(chunk[1 : len(chunk)-1])
+	case '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+		if chunk[0] == '-' && len(chunk) == 1 {
+			// - without number is symbol
 			obj = &scmgo.Symbol{Name: chunk}
+		} else { // Integer & Float
+			obj, err = StringToNumber(chunk)
 		}
+	case '\'': // Quote
+		obj = new(scmgo.Quote)
+	case ';': // Comment
+		// obj = &scmgo.Comment{Content: chunk[1 : len(chunk)-1]}
+		return // no comments
+	case '(': // Cons
+		p.stack = p.stack.Push(p.list)
+		p.list = scmgo.Onil
+		return
+	case ')': // return Cons
+		obj, err = p.popup()
+	default: // Symbol
+		obj = &scmgo.Symbol{Name: chunk}
+	}
 
-		if err != nil {
-			log.Error("%s", err)
+	if err != nil {
+		log.Error("%s", err)
+		return
+	}
+
+	// processing Quote
+	if p.list.Car != nil {
+		if last, ok := p.list.Car.(*scmgo.Quote); ok {
+			last.Objs = obj
 			return
 		}
-
-		// processing Quote
-		if list.Car != nil {
-			if last, ok := list.Car.(*scmgo.Quote); ok {
-				last.Objs = obj
-				continue
-			}
-		}
-
-		list = list.Push(obj)
 	}
 
-	if stack != scmgo.Onil {
+	p.list = p.list.Push(obj)
+	return
+}
+
+func (p *Parser) GetCode() (code scmgo.SchemeObject, err error) {
+	if p.stack != scmgo.Onil {
 		return nil, ErrParenthesisNotClose
 	}
-	return listToObj(list)
+	return listToObj(p.list)
 }
