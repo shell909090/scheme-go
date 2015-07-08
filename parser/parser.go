@@ -7,9 +7,6 @@ import (
 	"bitbucket.org/shell909090/scheme-go/scmgo"
 )
 
-// control_chars
-// ()' \n\r\t
-
 func StringToBoolean(s string) (o scmgo.Boolean, err error) {
 	if len(s) != 2 || s[0] != '#' {
 		return scmgo.Ofalse, ErrBooleanUnknown
@@ -61,21 +58,6 @@ func convertDotPair(list *scmgo.Cons) (result *scmgo.Cons) {
 	return &scmgo.Cons{Car: f, Cdr: t} // all matched
 }
 
-func listToObj(list *scmgo.Cons) (obj scmgo.SchemeObject, err error) {
-	if list.Car != nil {
-		last, ok := list.Car.(*scmgo.Quote)
-		if ok && last.Objs == nil {
-			return nil, ErrQuoteInEnd
-		}
-	}
-	list, err = scmgo.ReverseList(list)
-	if err != nil {
-		log.Error("%s", err)
-		return
-	}
-	return convertDotPair(list), nil
-}
-
 type Parser struct {
 	list  *scmgo.Cons
 	stack *scmgo.Cons
@@ -83,6 +65,21 @@ type Parser struct {
 
 func CreateParser() (p *Parser) {
 	return &Parser{list: scmgo.Onil, stack: scmgo.Onil}
+}
+
+func (p *Parser) listToObj() (obj scmgo.SchemeObject, err error) {
+	if p.list.Car != nil {
+		last, ok := p.list.Car.(*scmgo.Quote)
+		if ok && last.Objs == nil {
+			return nil, ErrQuoteInEnd
+		}
+	}
+	p.list, err = scmgo.ReverseList(p.list)
+	if err != nil {
+		log.Error("%s", err)
+		return
+	}
+	return convertDotPair(p.list), nil
 }
 
 func (p *Parser) popup() (obj scmgo.SchemeObject, err error) {
@@ -93,7 +90,7 @@ func (p *Parser) popup() (obj scmgo.SchemeObject, err error) {
 		return nil, ErrParenthesisNotClose
 	}
 
-	obj, err = listToObj(p.list)
+	obj, err = p.listToObj()
 	if err != nil {
 		log.Error("%s", err)
 		return
@@ -138,9 +135,10 @@ func (p *Parser) ReceiveChunk(chunk string) (err error) {
 		}
 	case '\'': // Quote
 		obj = new(scmgo.Quote)
-	case ';': // Comment
-		// obj = &scmgo.Comment{Content: chunk[1 : len(chunk)-1]}
-		return // no comments
+	// Comment: no comments now
+	// case ';':
+	// 	obj = &scmgo.Comment{Content: chunk[1 : len(chunk)-1]}
+	// 	return
 	case '(': // Cons
 		p.stack = p.stack.Push(p.list)
 		p.list = scmgo.Onil
@@ -172,5 +170,5 @@ func (p *Parser) GetCode() (code scmgo.SchemeObject, err error) {
 	if p.stack != scmgo.Onil {
 		return nil, ErrParenthesisNotClose
 	}
-	return listToObj(p.list)
+	return p.listToObj()
 }
