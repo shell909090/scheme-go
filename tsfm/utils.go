@@ -1,6 +1,14 @@
 package tsfm
 
-import "bitbucket.org/shell909090/scheme-go/scmgo"
+import (
+	"errors"
+
+	"bitbucket.org/shell909090/scheme-go/scmgo"
+)
+
+var (
+	ErrNotAPattern = errors.New("not a pattern")
+)
 
 func Walker(o *scmgo.Cons, f func(o *scmgo.Cons) (err error)) (err error) {
 	err = o.Iter(func(i scmgo.SchemeObject) (err error) {

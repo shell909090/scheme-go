@@ -40,8 +40,8 @@ func StackFormatter(f Frame) (r string) {
 	return buf.String()
 }
 
-func EvalAndReturn(i SchemeObject, e *Environ, p Frame) (next Frame, err error) {
-	t, next, err := i.Eval(e, p)
+func EvalAndReturn(i SchemeObject, e *Environ, f Frame) (next Frame, err error) {
+	t, next, err := i.Eval(e, f)
 	if err != nil {
 		log.Error("%s", err)
 		return
@@ -51,7 +51,7 @@ func EvalAndReturn(i SchemeObject, e *Environ, p Frame) (next Frame, err error) 
 		return
 	}
 
-	next = p
+	next = f
 	err = next.Return(t)
 	if err != nil {
 		log.Error("%s", err)
