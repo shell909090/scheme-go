@@ -89,7 +89,7 @@ func run() (err error) {
 		return
 	}
 
-	code, err = tsfm.Transform(code)
+	code, err = tsfm.DefineTransformer.Transform(code)
 	if err != nil {
 		log.Error("%s", err)
 		return
@@ -132,5 +132,5 @@ func main() {
 	}
 
 	PrepareMacro()
-	// run()
+	run()
 }

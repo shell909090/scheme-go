@@ -40,6 +40,7 @@ func ParseRule(literals Literals, rule *scmgo.Cons) (r *Rule, err error) {
 		log.Error("%s", err.Error())
 		return
 	}
+	log.Debug("rule: %s", r.p.Format())
 
 	_, rule, err = rule.PopCons()
 	if err != nil {
@@ -79,6 +80,7 @@ func DefineSyntax(obj scmgo.SchemeObject) (s *Syntax, err error) {
 	}
 	s = &Syntax{}
 	s.Keyword = sname.Name
+	log.Debug("syntax: %s", s.Keyword)
 
 	syntax, _, err := define.PopCons()
 	if err != nil {
@@ -133,4 +135,24 @@ func (s *Syntax) Parse(syntax *scmgo.Cons) (err error) {
 	}
 
 	return
+}
+
+func (s *Syntax) Transform(i scmgo.SchemeObject) (result scmgo.SchemeObject, err error) {
+	var yes bool
+	for _, rule := range s.rules {
+		log.Debug("try rule: %s", rule.p.Format())
+
+		mr := CreateMatchResult()
+		yes, err = rule.p.Match(mr, i)
+		if err != nil {
+			log.Error("%s", err.Error())
+			return
+		}
+		if yes {
+			log.Warning("%s", mr.Format())
+			// TODO: render template
+			return
+		}
+	}
+	return nil, ErrNoRule
 }

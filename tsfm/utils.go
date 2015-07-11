@@ -7,9 +7,11 @@ import (
 )
 
 var (
-	ErrNotAPattern = errors.New("not a pattern")
-	ErrWrongStruct = errors.New("wrong struct")
-	ErrSyntaxExist = errors.New("syntax exist")
+	ErrNotAPattern    = errors.New("not a pattern")
+	ErrWrongStruct    = errors.New("wrong struct")
+	ErrSyntaxExist    = errors.New("syntax exist")
+	ErrElpsAfterNoVar = errors.New("ellipsis after something not a pattern varible")
+	ErrNoRule         = errors.New("no rule match in syntax")
 )
 
 func Walker(o *scmgo.Cons, f func(o *scmgo.Cons) (err error)) (err error) {

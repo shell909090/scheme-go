@@ -46,6 +46,25 @@ func (p *PatternVariable) Match(mr *MatchResult, i scmgo.SchemeObject) (yes bool
 	return true, nil
 }
 
+type PatternEllipses struct {
+	PatternObject
+	toName string
+}
+
+func CreatePatternEllipses(pv *PatternVariable) (p *PatternEllipses) {
+	p = &PatternEllipses{toName: pv.toName}
+	return
+}
+
+func (p *PatternEllipses) Format() (r string) {
+	return p.toName + " ..."
+}
+
+func (p *PatternEllipses) Match(mr *MatchResult, i scmgo.SchemeObject) (yes bool, err error) {
+	mr.Add(p.toName, i)
+	return true, nil
+}
+
 type PatternLiteral struct {
 	PatternObject
 	name string
@@ -90,7 +109,7 @@ func (p *PatternList) Match(mr *MatchResult, i scmgo.SchemeObject) (yes bool, er
 	rlist := p.rule_list
 
 	for olist != scmgo.Onil || rlist != scmgo.Onil {
-		log.Info("%s %s", olist.Format(), rlist.Format())
+		log.Info("now match: %s %s", olist.Format(), rlist.Format())
 
 		obj := olist.Car
 		subp, ok := rlist.Car.(Pattern)
@@ -98,8 +117,18 @@ func (p *PatternList) Match(mr *MatchResult, i scmgo.SchemeObject) (yes bool, er
 			return false, ErrNotAPattern
 		}
 
+		if _, ok := subp.(*PatternEllipses); ok {
+			yes, err = subp.Match(mr, olist)
+			if err != nil {
+				log.Error("%s", err.Error())
+				return
+			}
+			return yes, nil
+		}
+
 		yes, err = subp.Match(mr, obj)
 		if err != nil {
+			log.Error("%s", err.Error())
 			return
 		}
 		if !yes {
@@ -132,14 +161,24 @@ func (p *PatternList) Match(mr *MatchResult, i scmgo.SchemeObject) (yes bool, er
 
 func ParsePattern(literals Literals, pattern *scmgo.Cons) (p Pattern, err error) {
 	var ok bool
+	var pv *PatternVariable
 	pl := CreatePatternList()
 	o := pattern
+LOOP:
 	for o != scmgo.Onil {
 		switch ttmp := o.Car.(type) {
 		case *scmgo.Symbol:
 			switch {
 			case ttmp.Name == "_":
 				p = &PatternAny{}
+			case ttmp.Name == "...":
+				pv, ok = pl.rule_list.Car.(*PatternVariable)
+				if !ok {
+					return nil, ErrElpsAfterNoVar
+				}
+				pl.rule_list.Car = CreatePatternEllipses(pv)
+				// that's the end
+				break LOOP
 			case literals.CheckLiteral(ttmp.Name):
 				p = CreatePatternLiteral(ttmp.Name)
 			default:
@@ -165,6 +204,5 @@ func ParsePattern(literals Literals, pattern *scmgo.Cons) (p Pattern, err error)
 	}
 
 	pl.rule_list, err = scmgo.ReverseList(pl.rule_list, scmgo.Onil)
-	log.Debug("%s", pl.rule_list.Format())
 	return pl, err
 }

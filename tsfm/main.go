@@ -38,12 +38,8 @@ func (t *Transformer) Parse(obj scmgo.SchemeObject) (err error) {
 	return
 }
 
-func Transform(src scmgo.SchemeObject) (code scmgo.SchemeObject, err error) {
+func (t *Transformer) Transform(src scmgo.SchemeObject) (code scmgo.SchemeObject, err error) {
 	code = src
-
-	p := CreatePatternList()
-	p.rule_list = p.rule_list.Push(CreatePatternVariable("dest"))
-	p.rule_list = p.rule_list.Push(CreatePatternLiteral("display"))
 
 	c, ok := code.(*scmgo.Cons)
 	if !ok {
@@ -51,15 +47,21 @@ func Transform(src scmgo.SchemeObject) (code scmgo.SchemeObject, err error) {
 	}
 
 	err = Walker(c, func(o *scmgo.Cons) (err error) {
-		mr := CreateMatchResult()
-		yes, err := p.Match(mr, o)
-		if err != nil {
+		s, _, err := o.PopSymbol()
+		if err != nil { // FIXME: not a symbol is not a error, but maybe.
+			err = nil
 			return
 		}
-		if yes {
-			log.Info("%v", mr.m)
-			panic("ok")
+		syntax, ok := t.syntaxes[s.Name]
+		if !ok { // nothing match
+			return
 		}
+
+		_, err = syntax.Transform(o)
+		if err != nil {
+			log.Error("%s", err.Error())
+			return
+		} // FIXME: how to write o back?
 		return
 	})
 	if err != nil {

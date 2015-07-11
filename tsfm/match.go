@@ -1,6 +1,11 @@
 package tsfm
 
-import "bitbucket.org/shell909090/scheme-go/scmgo"
+import (
+	"fmt"
+	"strings"
+
+	"bitbucket.org/shell909090/scheme-go/scmgo"
+)
 
 type MatchResult struct {
 	m map[string]scmgo.SchemeObject
@@ -15,4 +20,12 @@ func CreateMatchResult() (m *MatchResult) {
 
 func (m *MatchResult) Add(name string, value scmgo.SchemeObject) {
 	m.m[name] = value
+}
+
+func (m *MatchResult) Format() (r string) {
+	var strs []string
+	for name, value := range m.m {
+		strs = append(strs, fmt.Sprintf("%s = %s", name, value.Format()))
+	}
+	return strings.Join(strs, "\n")
 }
