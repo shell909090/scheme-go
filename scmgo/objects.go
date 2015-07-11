@@ -5,29 +5,16 @@ import (
 	"strconv"
 )
 
-type Evalor interface {
-	Eval(env *Environ, f Frame) (value SchemeObject, next Frame, err error)
-}
-
 type Formatter interface {
 	Format() (r string)
 }
 
 type SchemeObject interface {
-	Evalor
 	Formatter
 }
 
 type Symbol struct {
 	Name string
-}
-
-func (o *Symbol) Eval(env *Environ, f Frame) (value SchemeObject, next Frame, err error) {
-	value = env.Get(o.Name)
-	if value == nil {
-		return nil, nil, ErrNameNotFound
-	}
-	return
 }
 
 func (o *Symbol) Format() (r string) {
@@ -38,21 +25,11 @@ type Quote struct {
 	Objs SchemeObject
 }
 
-func (o *Quote) Eval(env *Environ, f Frame) (value SchemeObject, next Frame, err error) {
-	value = o.Objs
-	return
-}
-
 func (o *Quote) Format() (r string) {
 	return "'" + o.Objs.Format()
 }
 
 type Boolean bool
-
-func (o Boolean) Eval(env *Environ, f Frame) (value SchemeObject, next Frame, err error) {
-	value = o
-	return
-}
 
 func (o Boolean) Format() (r string) {
 	if o {
@@ -69,32 +46,17 @@ const (
 
 type Integer int
 
-func (o Integer) Eval(env *Environ, f Frame) (value SchemeObject, next Frame, err error) {
-	value = o
-	return
-}
-
 func (o Integer) Format() (r string) {
 	return strconv.FormatInt(int64(o), 10)
 }
 
 type Float float64
 
-func (o Float) Eval(env *Environ, f Frame) (value SchemeObject, next Frame, err error) {
-	value = o
-	return
-}
-
 func (o Float) Format() (r string) {
 	return strconv.FormatFloat(float64(o), 'f', 2, 64)
 }
 
 type String string
-
-func (o String) Eval(env *Environ, f Frame) (value SchemeObject, next Frame, err error) {
-	value = o
-	return
-}
 
 func (o String) Format() (r string) {
 	return "\"" + string(o) + "\""
@@ -106,30 +68,6 @@ type Cons struct {
 }
 
 var Onil = &Cons{}
-
-func (o *Cons) Eval(env *Environ, f Frame) (value SchemeObject, next Frame, err error) {
-	var procedure SchemeObject
-	procedure, o, err = o.Pop()
-	if err != nil {
-		return
-	}
-
-	next = CreateApplyFrame(o, env, f) // not sure about procedure yet.
-	f = next
-
-	// get a result now, or get a frame which can return in future.
-	procedure, next, err = procedure.Eval(env, next)
-	if err != nil {
-		return
-	}
-	if next != nil {
-		return
-	}
-	// get return immediately
-	next = f
-	err = next.Return(procedure)
-	return
-}
 
 func (o *Cons) Format() (r string) {
 	buf := bytes.NewBuffer(nil)

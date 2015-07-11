@@ -24,9 +24,9 @@ func (p *InternalProcedure) IsApplicativeOrder() bool {
 	return p.applicative
 }
 
-func (p *InternalProcedure) Eval(env *Environ, f Frame) (value SchemeObject, next Frame, err error) {
-	panic("run eval of internal procedure")
-}
+// func (p *InternalProcedure) Eval(env *Environ, f Frame) (value SchemeObject, next Frame, err error) {
+// 	panic("run eval of internal procedure")
+// }
 
 func (p *InternalProcedure) Apply(args *Cons, f Frame) (value SchemeObject, next Frame, err error) {
 	log.Info("apply !%s, argument: %s", p.Name, args.Format())
@@ -55,9 +55,9 @@ func (p *LambdaProcedure) IsApplicativeOrder() bool {
 	return true
 }
 
-func (p *LambdaProcedure) Eval(env *Environ, f Frame) (value SchemeObject, next Frame, err error) {
-	panic("run eval of lambda procedure")
-}
+// func (p *LambdaProcedure) Eval(env *Environ, f Frame) (value SchemeObject, next Frame, err error) {
+// 	panic("run eval of lambda procedure")
+// }
 
 func setup_args(env *Environ, p *LambdaProcedure, o *Cons) (err error) {
 	var t SchemeObject

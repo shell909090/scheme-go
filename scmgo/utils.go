@@ -1,7 +1,6 @@
 package scmgo
 
 import (
-	"bytes"
 	"errors"
 
 	logging "github.com/op/go-logging"
@@ -22,35 +21,6 @@ var (
 	DefaultEnv   *Environ = &Environ{Parent: nil, Names: DefaultNames}
 )
 
-func StackFormatter(f Frame) (r string) {
-	buf := bytes.NewBuffer(nil)
-	for c := f; c != nil; c = c.GetParent() {
-		if _, ok := c.(*EndFrame); !ok {
-			buf.WriteString(c.Format() + "\n")
-		}
-	}
-	return buf.String()
-}
-
-func EvalAndReturn(i SchemeObject, e *Environ, f Frame) (next Frame, err error) {
-	t, next, err := i.Eval(e, f)
-	if err != nil {
-		log.Error("%s", err)
-		return
-	}
-
-	if next != nil {
-		return
-	}
-
-	next = f
-	err = next.Return(t)
-	if err != nil {
-		log.Error("%s", err)
-	}
-	return
-}
-
 func ReverseList(head *Cons, tail SchemeObject) (result *Cons, err error) {
 	// image a list from left to right.
 	var ok bool
@@ -66,6 +36,64 @@ func ReverseList(head *Cons, tail SchemeObject) (result *Cons, err error) {
 		}
 	}
 	return left.(*Cons), nil
+}
+
+func Eval(o SchemeObject, env *Environ, f Frame) (value SchemeObject, next Frame, err error) {
+	switch t := o.(type) {
+	case *Symbol:
+		value = env.Get(t.Name)
+		if value == nil {
+			return nil, nil, ErrNameNotFound
+		}
+	case *Quote:
+		value = t.Objs
+	case *Cons:
+		var procedure SchemeObject
+		procedure, t, err = t.Pop()
+		if err != nil {
+			return
+		}
+
+		next = CreateApplyFrame(t, env, f) // not sure about procedure yet.
+		f = next
+
+		// get a result now, or get a frame which can return in future.
+		procedure, next, err = Eval(procedure, env, next)
+		if err != nil {
+			log.Error("%s", err.Error())
+			return
+		}
+		if next != nil {
+			return
+		}
+		// get return immediately
+		next = f
+		err = next.Return(procedure)
+	case *InternalProcedure, *LambdaProcedure:
+		panic("run eval in procedure")
+	default:
+		value = o
+	}
+	return
+}
+
+func EvalAndReturn(i SchemeObject, e *Environ, f Frame) (next Frame, err error) {
+	t, next, err := Eval(i, e, f)
+	if err != nil {
+		log.Error("%s", err)
+		return
+	}
+
+	if next != nil {
+		return
+	}
+
+	next = f
+	err = next.Return(t)
+	if err != nil {
+		log.Error("%s", err)
+	}
+	return
 }
 
 func Trampoline(f Frame) (result SchemeObject, err error) {

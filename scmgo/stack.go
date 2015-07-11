@@ -68,29 +68,18 @@ func (f *BeginFrame) Return(i SchemeObject) (err error) {
 
 func (f *BeginFrame) Exec() (next Frame, err error) {
 	var obj SchemeObject
-
-	for {
-		switch {
-		case f.Obj == Onil: // FIXME: not make sense
-			return f.Parent, nil
-		case f.Obj.Cdr == Onil: // jump
-			return EvalAndReturn(f.Obj.Car, f.Env, f.Parent)
-		default: // eval
-			obj, f.Obj, err = f.Obj.Pop()
-			if err != nil {
-				log.Error("%s", err)
-				return
-			}
-
-			_, next, err = obj.Eval(f.Env, f)
-			if err != nil {
-				log.Error("%s", err)
-				return
-			}
-			if next != nil {
-				return
-			}
+	switch {
+	case f.Obj == Onil: // FIXME: not make sense
+		return f.Parent, nil
+	case f.Obj.Cdr == Onil: // jump
+		return EvalAndReturn(f.Obj.Car, f.Env, f.Parent)
+	default: // eval
+		obj, f.Obj, err = f.Obj.Pop()
+		if err != nil {
+			log.Error("%s", err)
+			return
 		}
+		return EvalAndReturn(obj, f.Env, f)
 	}
 	return
 }

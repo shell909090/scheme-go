@@ -22,6 +22,15 @@ func (m *MatchResult) Add(name string, value scmgo.SchemeObject) {
 	m.m[name] = value
 }
 
+// func (m *MatchResult) Copy(obj scmgo.SchemeObject) (result scmgo.SchemeObject, err error) {
+// 	switch t := obj.(type) {
+// 	case *scmgo.Symbol:
+// 		o, ok = m.m[t.Name]
+// 		if ok {
+// 		}
+// 	}
+// }
+
 func (m *MatchResult) Format() (r string) {
 	var strs []string
 	for name, value := range m.m {

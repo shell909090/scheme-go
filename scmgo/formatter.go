@@ -1,6 +1,7 @@
 package scmgo
 
 import (
+	"bytes"
 	"io"
 	"strings"
 )
@@ -111,4 +112,14 @@ func PrettyFormat(s io.Writer, o SchemeObject, iv int) (rv int, err error) {
 	str = formatOneLineList(c)
 	s.Write([]byte(str))
 	return iv + len(str), err
+}
+
+func StackFormatter(f Frame) (r string) {
+	buf := bytes.NewBuffer(nil)
+	for c := f; c != nil; c = c.GetParent() {
+		if _, ok := c.(*EndFrame); !ok {
+			buf.WriteString(c.Format() + "\n")
+		}
+	}
+	return buf.String()
 }
