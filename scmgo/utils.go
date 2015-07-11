@@ -22,14 +22,6 @@ var (
 	DefaultEnv   *Environ = &Environ{Parent: nil, Names: DefaultNames}
 )
 
-func GetHeadAsSymbol(o *Cons) (s *Symbol, err error) {
-	s, ok := o.Car.(*Symbol)
-	if !ok {
-		return nil, ErrType
-	}
-	return
-}
-
 func StackFormatter(f Frame) (r string) {
 	buf := bytes.NewBuffer(nil)
 	for c := f; c != nil; c = c.GetParent() {

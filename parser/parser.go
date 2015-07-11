@@ -7,11 +7,11 @@ import (
 	"bitbucket.org/shell909090/scheme-go/scmgo"
 )
 
-func StringToBoolean(s string) (o scmgo.Boolean, err error) {
-	if len(s) != 2 || s[0] != '#' {
+func StringToBoolean(b []byte) (o scmgo.Boolean, err error) {
+	if len(b) != 2 || b[0] != '#' {
 		return scmgo.Ofalse, ErrBooleanUnknown
 	}
-	switch s[1] {
+	switch b[1] {
 	case 't':
 		return scmgo.Otrue, nil
 	case 'f':
@@ -20,7 +20,8 @@ func StringToBoolean(s string) (o scmgo.Boolean, err error) {
 	return scmgo.Ofalse, ErrBooleanUnknown
 }
 
-func StringToNumber(chunk string) (obj scmgo.SchemeObject, err error) {
+func StringToNumber(b []byte) (obj scmgo.SchemeObject, err error) {
+	chunk := string(b)
 	if strings.Index(chunk, ".") != -1 {
 		var i float64
 		i, err = strconv.ParseFloat(chunk, 64)
@@ -34,12 +35,12 @@ func StringToNumber(chunk string) (obj scmgo.SchemeObject, err error) {
 }
 
 func convertDotPair(list *scmgo.Cons) (result *scmgo.Cons) {
-	f, c, err := list.Pop(false)
+	f, c, err := list.Pop()
 	if err != nil {
 		return list
 	}
 
-	s, c, err := c.Pop(false)
+	s, c, err := c.Pop()
 	if err != nil {
 		return list
 	}
@@ -47,7 +48,7 @@ func convertDotPair(list *scmgo.Cons) (result *scmgo.Cons) {
 		return list
 	} // secondary element not dot
 
-	t, c, err := c.Pop(false)
+	t, c, err := c.Pop()
 	if err != nil {
 		return list
 	}
@@ -82,71 +83,45 @@ func (p *Parser) listToObj() (obj scmgo.SchemeObject, err error) {
 	return convertDotPair(p.list), nil
 }
 
-func (p *Parser) popup() (obj scmgo.SchemeObject, err error) {
-	var ok bool
-	var t scmgo.SchemeObject
+func (p *Parser) Write(chunk []byte) (n int, err error) {
+	n = len(chunk)
+	// err = p.ReceiveChunk(string(b))
+	// if err != nil {
+	// 	return
+	// }
+	// return
+	// }
 
-	if p.stack == scmgo.Onil {
-		return nil, ErrParenthesisNotClose
-	}
-
-	obj, err = p.listToObj()
-	if err != nil {
-		log.Error("%s", err)
-		return
-	}
-
-	t, p.stack, err = p.stack.Pop(false)
-	if err != nil {
-		log.Error("%s", err)
-		return
-	}
-
-	p.list, ok = t.(*scmgo.Cons)
-	if !ok {
-		err = scmgo.ErrUnknown
-	}
-	return
-}
-
-func (p *Parser) Write(b []byte) (n int, err error) {
-	err = p.ReceiveChunk(string(b))
-	if err != nil {
-		return
-	}
-	n = len(b)
-	return
-}
-
-func (p *Parser) ReceiveChunk(chunk string) (err error) {
+	// func (p *Parser) ReceiveChunk(chunk string) (err error) {
 	var obj scmgo.SchemeObject
 
 	switch chunk[0] {
 	case '#': // Boolean
 		obj, err = StringToBoolean(chunk)
 	case '"': // String
-		obj = scmgo.String(chunk[1 : len(chunk)-1])
+		obj = scmgo.String(string(chunk[1 : len(chunk)-1]))
 	case '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
 		if chunk[0] == '-' && len(chunk) == 1 {
 			// - without number is symbol
-			obj = &scmgo.Symbol{Name: chunk}
+			obj = &scmgo.Symbol{Name: string(chunk)}
 		} else { // Integer & Float
 			obj, err = StringToNumber(chunk)
 		}
 	case '\'': // Quote
 		obj = new(scmgo.Quote)
-	// Comment: no comments now
-	// case ';':
-	// 	obj = &scmgo.Comment{Content: chunk[1 : len(chunk)-1]}
-	// 	return
 	case '(': // Cons
 		p.stack = p.stack.Push(p.list)
 		p.list = scmgo.Onil
 		return
 	case ')': // return Cons
-		obj, err = p.popup()
+		obj, err = p.listToObj()
+		if err != nil {
+			log.Error("%s", err)
+			return
+		}
+		p.list, p.stack, err = p.stack.PopCons()
 	default: // Symbol
-		obj = &scmgo.Symbol{Name: chunk}
+		obj = &scmgo.Symbol{Name: string(chunk)}
 	}
 
 	if err != nil {

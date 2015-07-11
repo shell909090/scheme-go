@@ -109,7 +109,7 @@ var Onil = &Cons{}
 
 func (o *Cons) Eval(env *Environ, f Frame) (value SchemeObject, next Frame, err error) {
 	var procedure SchemeObject
-	procedure, o, err = o.Pop(false)
+	procedure, o, err = o.Pop()
 	if err != nil {
 		return
 	}
@@ -140,17 +140,14 @@ func (o *Cons) Format() (r string) {
 	return buf.String()
 }
 
-func (o *Cons) Pop(improper bool) (r SchemeObject, next *Cons, err error) {
+func (o *Cons) Pop() (r SchemeObject, next *Cons, err error) {
 	if o == Onil {
 		return nil, nil, ErrListOutOfIndex
 	}
 	r = o.Car
 	next, ok := o.Cdr.(*Cons)
 	if !ok {
-		if !improper {
-			return nil, nil, ErrISNotAList
-		}
-		return o.Cdr, Onil, nil
+		return nil, nil, ErrISNotAList
 	}
 	return
 } // O(1)
@@ -212,3 +209,27 @@ func (o *Cons) GetN(n int) (r SchemeObject, err error) {
 	}
 	return c.Car, nil
 } // O(n)
+
+func (o *Cons) PopSymbol() (s *Symbol, next *Cons, err error) {
+	t, next, err := o.Pop()
+	if err != nil {
+		return
+	}
+	s, ok := t.(*Symbol)
+	if !ok {
+		return nil, nil, ErrType
+	}
+	return
+}
+
+func (o *Cons) PopCons() (s *Cons, next *Cons, err error) {
+	t, next, err := o.Pop()
+	if err != nil {
+		return
+	}
+	s, ok := t.(*Cons)
+	if !ok {
+		return nil, nil, ErrType
+	}
+	return
+}

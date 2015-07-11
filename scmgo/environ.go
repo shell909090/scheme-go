@@ -20,11 +20,8 @@ func (e *Environ) Format() (r string) {
 	return strings.Join(str, "\n")
 }
 
-func (e *Environ) Fork(names map[string]SchemeObject) (ne *Environ) {
-	if names == nil {
-		names = make(map[string]SchemeObject)
-	}
-	return &Environ{Parent: e, Names: names}
+func (e *Environ) Fork() (ne *Environ) {
+	return &Environ{Parent: e, Names: make(map[string]SchemeObject)}
 }
 
 func (e *Environ) Add(name string, value SchemeObject) {

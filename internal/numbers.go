@@ -94,7 +94,7 @@ func Dec(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Fra
 	}
 
 	if any {
-		t, o, err = o.Pop(false)
+		t, o, err = o.Pop()
 		if err != nil {
 			return
 		}
@@ -109,7 +109,7 @@ func Dec(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Fra
 		}
 		value = scmgo.Float(s)
 	} else {
-		t, o, err = o.Pop(false)
+		t, o, err = o.Pop()
 		if err != nil {
 			return
 		}
@@ -136,7 +136,7 @@ func Mul(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Fra
 	}
 
 	if any {
-		t, o, err = o.Pop(false)
+		t, o, err = o.Pop()
 		if err != nil {
 			return
 		}
@@ -151,7 +151,7 @@ func Mul(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Fra
 		}
 		value = scmgo.Float(s)
 	} else {
-		t, o, err = o.Pop(false)
+		t, o, err = o.Pop()
 		if err != nil {
 			return
 		}
@@ -171,7 +171,7 @@ func Mul(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Fra
 
 func Div(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
 	var t scmgo.SchemeObject
-	t, o, err = o.Pop(false)
+	t, o, err = o.Pop()
 	if err != nil {
 		return
 	}

@@ -8,12 +8,12 @@ func MakeCons(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmg
 		return
 	}
 
-	t1, o, err := o.Pop(false)
+	t1, o, err := o.Pop()
 	if err != nil {
 		return
 	}
 
-	t2, o, err := o.Pop(false)
+	t2, o, err := o.Pop()
 	if err != nil {
 		return
 	}

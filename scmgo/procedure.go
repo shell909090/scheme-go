@@ -59,57 +59,48 @@ func (p *LambdaProcedure) Eval(env *Environ, f Frame) (value SchemeObject, next 
 	panic("run eval of lambda procedure")
 }
 
-func genNames(p *LambdaProcedure, o *Cons) (names map[string]SchemeObject, err error) {
-	var s, s1 *Symbol
-	names = make(map[string]SchemeObject)
+func setup_args(env *Environ, p *LambdaProcedure, o *Cons) (err error) {
+	var t SchemeObject
+	var s *Symbol
 
 	pn := p.Args // parameters by name
 	pv := o      // parameters by vector
 
 	for pn != Onil && pv != Onil {
-		s, err = GetHeadAsSymbol(pn)
+		s, pn, err = pn.PopSymbol()
 		if err != nil {
+			log.Error("%s", err.Error())
 			return
 		}
 
 		if s.Name == "." {
-			_, pn, err = pn.Pop(false)
+			s, pn, err = pn.PopSymbol()
 			if err != nil {
+				log.Error("%s", err.Error())
 				return
 			}
-
-			s1, err = GetHeadAsSymbol(pn)
-			if err != nil {
-				return
-			}
-
-			names[s1.Name] = pv
+			env.Add(s.Name, pv)
 			break
 		}
-		names[s.Name] = pv.Car
 
-		_, pn, err = pn.Pop(false)
+		t, pv, err = pv.Pop()
 		if err != nil {
 			return
 		}
-		_, pv, err = pv.Pop(false)
-		if err != nil {
-			return
-		}
+		env.Add(s.Name, t)
 	}
 	return
 }
 
 func (p *LambdaProcedure) Apply(args *Cons, f Frame) (value SchemeObject, next Frame, err error) {
-	names, err := genNames(p, args)
+	env := p.Env.Fork()
+	err = setup_args(env, p, args)
 	if err != nil {
 		return
 	}
-	env := p.Env.Fork(names)
 	log.Info("apply %s, env:\n%s", p.Format(), env.Format())
 	next = CreateBeginFrame(
-		p.Obj, env,
-		f.GetParent()) // coming from apply, so pass this frame.
+		p.Obj, env, f.GetParent()) // coming from apply, so pass this frame.
 	return
 }
 

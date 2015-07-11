@@ -45,7 +45,7 @@ func formatMultiLineList(s io.Writer, list *Cons, iv int) (rv int, err error) {
 	rv = iv + 1
 
 	if _, ok := obj.Car.(*Symbol); ok {
-		tmp, obj, err = obj.Pop(false)
+		tmp, obj, err = obj.Pop()
 		if err != nil {
 			log.Error("%s", err)
 			return

@@ -76,7 +76,7 @@ func (f *BeginFrame) Exec() (next Frame, err error) {
 		case f.Obj.Cdr == Onil: // jump
 			return EvalAndReturn(f.Obj.Car, f.Env, f.Parent)
 		default: // eval
-			obj, f.Obj, err = f.Obj.Pop(false)
+			obj, f.Obj, err = f.Obj.Pop()
 			if err != nil {
 				log.Error("%s", err)
 				return
@@ -155,7 +155,7 @@ func (f *ApplyFrame) Exec() (next Frame, err error) {
 
 	for f.Args != Onil {
 		// pop up next argument
-		obj, f.Args, err = f.Args.Pop(false)
+		obj, f.Args, err = f.Args.Pop()
 		if err != nil {
 			log.Error("%s", err)
 			return
@@ -178,6 +178,57 @@ func (f *ApplyFrame) Exec() (next Frame, err error) {
 	}
 	next, err = f.Apply(f.EvaledArgs)
 	return
+}
+
+type IfFrame struct {
+	Parent Frame
+	Env    *Environ
+	Cond   SchemeObject
+	TCase  SchemeObject
+	ECase  SchemeObject
+	Hit    SchemeObject
+}
+
+func CreateIfFrame(cond, tcase, ecase SchemeObject, e *Environ, p Frame) (f Frame) {
+	return &IfFrame{Parent: p, Cond: cond, TCase: tcase, ECase: ecase, Env: e}
+}
+
+func (f *IfFrame) Format() (r string) {
+	return fmt.Sprintf("If:\n%s", f.Cond.Format())
+}
+
+func (f *IfFrame) GetParent() (p Frame) {
+	return f.Parent
+}
+
+func (f *IfFrame) GetEnv() (e *Environ) {
+	return f.Env
+}
+
+func (f *IfFrame) Return(i SchemeObject) (err error) {
+	b, ok := i.(Boolean)
+	if !ok {
+		return ErrType
+	}
+	if bool(b) {
+		f.Hit = f.TCase
+	} else {
+		f.Hit = f.ECase
+	}
+	return
+}
+
+func (f *IfFrame) Exec() (next Frame, err error) {
+	switch f.Hit {
+	case nil: // eval condition.
+		return EvalAndReturn(f.Cond, f.Env, f)
+	case Onil: // pass if with no case.
+		next = f.Parent
+		err = next.Return(Onil)
+		return
+	default: // eval case.
+		return EvalAndReturn(f.Hit, f.Env, f.Parent)
+	}
 }
 
 type CondFrame struct {
@@ -204,20 +255,17 @@ func (f *CondFrame) GetEnv() (e *Environ) {
 }
 
 func (f *CondFrame) Return(i SchemeObject) (err error) {
-	var tmp SchemeObject
+	var cond *Cons
 	b, ok := i.(Boolean)
 	if !ok {
 		return ErrType
 	}
 
 	// pop header condition.
-	tmp, f.Obj, err = f.Obj.Pop(false)
+	cond, f.Obj, err = f.Obj.PopCons()
 	if err != nil {
+		log.Error("%s", err.Error())
 		return
-	}
-	cond, ok := tmp.(*Cons)
-	if !ok {
-		return ErrType
 	}
 
 	if bool(b) {

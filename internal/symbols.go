@@ -7,22 +7,15 @@ import (
 )
 
 func Define(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
-	t, o, err := o.Pop(false)
+	args, o, err := o.PopCons()
 	if err != nil {
+		log.Error("%s", err.Error())
 		return
 	}
 
-	args, ok := t.(*scmgo.Cons)
-	if !ok {
-		return nil, nil, scmgo.ErrType
-	}
-
-	name, err := scmgo.GetHeadAsSymbol(args)
+	name, args, err := args.PopSymbol()
 	if err != nil {
-		return
-	}
-	_, args, err = args.Pop(false)
-	if err != nil {
+		log.Error("%s", err.Error())
 		return
 	}
 
@@ -38,14 +31,10 @@ func Define(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.
 }
 
 func Lambda(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
-	t, o, err := o.Pop(false)
+	args, o, err := o.PopCons()
 	if err != nil {
+		log.Error("%s", err.Error())
 		return
-	}
-
-	args, ok := t.(*scmgo.Cons)
-	if !ok {
-		return nil, nil, scmgo.ErrType
 	}
 
 	value = &scmgo.LambdaProcedure{
@@ -63,7 +52,25 @@ func Cond(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Fr
 }
 
 func If(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
-	// TODO:
+	cond, o, err := o.Pop()
+	if err != nil {
+		log.Error("%s", err.Error())
+		return
+	}
+	tcase, o, err := o.Pop()
+	if err != nil {
+		log.Error("%s", err.Error())
+		return
+	}
+	var ecase scmgo.SchemeObject = scmgo.Onil
+	if o != scmgo.Onil {
+		ecase, o, err = o.Pop()
+		if err != nil {
+			log.Error("%s", err.Error())
+			return
+		}
+	}
+	next = scmgo.CreateIfFrame(cond, tcase, ecase, f.GetEnv(), f.GetParent())
 	return
 }
 
