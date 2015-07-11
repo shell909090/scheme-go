@@ -21,7 +21,7 @@ var (
 	log = logging.MustGetLogger("parser")
 )
 
-func SourceToAST(source io.ReadCloser) (code scmgo.SchemeObject, err error) {
+func SourceToAST(source io.Reader) (code scmgo.SchemeObject, err error) {
 	p := CreateParser()
 	err = Grammar(source, p)
 	if err != nil {

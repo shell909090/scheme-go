@@ -1,8 +1,6 @@
 package tsfm
 
-import (
-	"bitbucket.org/shell909090/scheme-go/scmgo"
-)
+import "bitbucket.org/shell909090/scheme-go/scmgo"
 
 type PatternObject struct {
 }
@@ -11,16 +9,18 @@ func (p *PatternObject) Eval(env *scmgo.Environ, f scmgo.Frame) (value scmgo.Sch
 	panic("run eval of partten object")
 }
 
-func (p *PatternObject) Format() (r string) {
-	return "parttern"
-}
-
 type Pattern interface {
+	Eval(env *scmgo.Environ, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error)
+	Format() (r string)
 	Match(mr *MatchResult, i scmgo.SchemeObject) (yes bool, err error)
 }
 
 type PatternAny struct {
 	PatternObject
+}
+
+func (p *PatternAny) Format() (r string) {
+	return "_"
 }
 
 func (p *PatternAny) Match(mr *MatchResult, i scmgo.SchemeObject) (yes bool, err error) {
@@ -37,6 +37,10 @@ func CreatePatternVariable(toname string) (p *PatternVariable) {
 	return
 }
 
+func (p *PatternVariable) Format() (r string) {
+	return p.toName
+}
+
 func (p *PatternVariable) Match(mr *MatchResult, i scmgo.SchemeObject) (yes bool, err error) {
 	mr.Add(p.toName, i)
 	return true, nil
@@ -50,6 +54,10 @@ type PatternLiteral struct {
 func CreatePatternLiteral(name string) (p *PatternLiteral) {
 	p = &PatternLiteral{name: name}
 	return
+}
+
+func (p *PatternLiteral) Format() (r string) {
+	return "'" + p.name
 }
 
 func (p *PatternLiteral) Match(mr *MatchResult, i scmgo.SchemeObject) (yes bool, err error) {
@@ -68,6 +76,10 @@ type PatternList struct {
 func CreatePatternList() (p *PatternList) {
 	p = &PatternList{rule_list: scmgo.Onil}
 	return
+}
+
+func (p *PatternList) Format() (r string) {
+	return p.rule_list.Format()
 }
 
 func (p *PatternList) Match(mr *MatchResult, i scmgo.SchemeObject) (yes bool, err error) {
@@ -116,4 +128,43 @@ func (p *PatternList) Match(mr *MatchResult, i scmgo.SchemeObject) (yes bool, er
 		return true, nil
 	}
 	return false, nil
+}
+
+func ParsePattern(literals Literals, pattern *scmgo.Cons) (p Pattern, err error) {
+	var ok bool
+	pl := CreatePatternList()
+	o := pattern
+	for o != scmgo.Onil {
+		switch ttmp := o.Car.(type) {
+		case *scmgo.Symbol:
+			switch {
+			case ttmp.Name == "_":
+				p = &PatternAny{}
+			case literals.CheckLiteral(ttmp.Name):
+				p = CreatePatternLiteral(ttmp.Name)
+			default:
+				p = CreatePatternVariable(ttmp.Name)
+			}
+		case *scmgo.Cons:
+			p, err = ParsePattern(literals, ttmp)
+		default:
+			panic("not support yet")
+		}
+
+		if err != nil {
+			log.Error("%s", err.Error())
+			return
+		}
+		pl.rule_list = pl.rule_list.Push(p)
+
+		o, ok = o.Cdr.(*scmgo.Cons)
+		if !ok {
+			pl.rule_list, err = scmgo.ReverseList(pl.rule_list, o.Cdr)
+			return pl, err
+		}
+	}
+
+	pl.rule_list, err = scmgo.ReverseList(pl.rule_list, scmgo.Onil)
+	log.Debug("%s", pl.rule_list.Format())
+	return pl, err
 }

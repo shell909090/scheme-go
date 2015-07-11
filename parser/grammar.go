@@ -42,10 +42,8 @@ func readString(src *bufio.Reader) (buf []byte, err error) {
 	return
 }
 
-func Grammar(source io.ReadCloser, dst io.Writer) (err error) {
+func Grammar(source io.Reader, dst io.Writer) (err error) {
 	src := bufio.NewReader(source)
-	defer source.Close()
-
 	// performance
 	var c byte
 	var buf []byte

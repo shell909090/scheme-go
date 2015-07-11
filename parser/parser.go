@@ -75,7 +75,7 @@ func (p *Parser) listToObj() (obj scmgo.SchemeObject, err error) {
 			return nil, ErrQuoteInEnd
 		}
 	}
-	p.list, err = scmgo.ReverseList(p.list)
+	p.list, err = scmgo.ReverseList(p.list, scmgo.Onil)
 	if err != nil {
 		log.Error("%s", err)
 		return

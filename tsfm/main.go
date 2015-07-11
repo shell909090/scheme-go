@@ -6,8 +6,37 @@ import (
 )
 
 var (
-	log = logging.MustGetLogger("trans")
+	log               = logging.MustGetLogger("trans")
+	DefineTransformer = &Transformer{syntaxes: make(map[string]*Syntax)}
 )
+
+type Transformer struct {
+	syntaxes map[string]*Syntax
+}
+
+func (t *Transformer) Parse(obj scmgo.SchemeObject) (err error) {
+	code, ok := obj.(*scmgo.Cons)
+	if !ok {
+		return scmgo.ErrType
+	}
+	err = code.Iter(func(o scmgo.SchemeObject) (e error) {
+		s, e := DefineSyntax(o)
+		if e != nil {
+			log.Error("%s", e.Error())
+			return
+		}
+		if _, ok := t.syntaxes[s.Keyword]; ok {
+			return ErrSyntaxExist
+		}
+		t.syntaxes[s.Keyword] = s
+		return
+	}, false)
+	if err != nil {
+		log.Error("%s", err.Error())
+		return
+	}
+	return
+}
 
 func Transform(src scmgo.SchemeObject) (code scmgo.SchemeObject, err error) {
 	code = src

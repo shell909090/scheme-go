@@ -172,7 +172,7 @@ func (f *ApplyFrame) Exec() (next Frame, err error) {
 	}
 
 	// all args has been evaled
-	f.EvaledArgs, err = ReverseList(f.EvaledArgs)
+	f.EvaledArgs, err = ReverseList(f.EvaledArgs, Onil)
 	if err != nil {
 		return
 	}

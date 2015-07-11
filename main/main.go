@@ -5,6 +5,8 @@ import (
 	stdlog "log"
 	"os"
 
+	"bytes"
+
 	_ "bitbucket.org/shell909090/scheme-go/internal"
 	"bitbucket.org/shell909090/scheme-go/parser"
 	"bitbucket.org/shell909090/scheme-go/scmgo"
@@ -46,47 +48,68 @@ func SetLogging() (err error) {
 	return
 }
 
-func parse() (code scmgo.SchemeObject, err error) {
-	file, err := os.Open(flag.Args()[0])
+func PrepareMacro() {
+	buf := bytes.NewBufferString(PreDefineMacro)
+	code, err := parser.SourceToAST(buf)
+	if err != nil {
+		panic("impossible")
+	}
+	err = tsfm.DefineTransformer.Parse(code)
+	if err != nil {
+		panic(err.Error())
+	}
+	return
+}
+
+func parse(filename string) (code scmgo.SchemeObject, err error) {
+	file, err := os.Open(filename)
 	if err != nil {
 		log.Error("%s", err)
 		return
 	}
 	defer file.Close()
-
 	code, err = parser.SourceToAST(file)
 	if err != nil {
 		log.Error("%s", err)
 		return
 	}
-
-	os.Stdout.WriteString(code.Format())
-	os.Stdout.Write([]byte("\n"))
 	return
 }
 
-func Transform(src scmgo.SchemeObject) (code scmgo.SchemeObject, err error) {
-	code, err = tsfm.Transform(src)
+func run() (err error) {
+	code, err := parse(flag.Args()[0])
+	if err != nil {
+		return
+	}
+
+	if Parse {
+		os.Stdout.WriteString("-------parse-------\n")
+		os.Stdout.WriteString(code.Format())
+		os.Stdout.Write([]byte("\n"))
+		return
+	}
+
+	code, err = tsfm.Transform(code)
 	if err != nil {
 		log.Error("%s", err)
 		return
 	}
 
-	os.Stdout.WriteString("-------transform-------\n")
-	os.Stdout.WriteString(code.Format())
-	os.Stdout.WriteString("\n")
-	return
-}
+	if Trans {
+		os.Stdout.WriteString("-------transform-------\n")
+		os.Stdout.WriteString(code.Format())
+		os.Stdout.WriteString("\n")
+		return
+	}
 
-func run(code scmgo.SchemeObject) (result scmgo.SchemeObject, err error) {
 	os.Stdout.WriteString("-------runtime-------\n")
-	result, err = scmgo.RunCode(code)
+	result, err := scmgo.RunCode(code)
 	if err != nil {
 		log.Error("%s", err)
 		return
 	}
-	os.Stdout.WriteString("-------output-------\n")
 
+	os.Stdout.WriteString("-------output-------\n")
 	os.Stdout.WriteString(result.Format())
 	os.Stdout.WriteString("\n")
 	return
@@ -108,23 +131,6 @@ func main() {
 		panic(err)
 	}
 
-	code, err := parse()
-	if err != nil {
-		log.Error("%s", err)
-		return
-	}
-	if Parse {
-		return
-	}
-
-	code, err = Transform(code)
-	if err != nil {
-		log.Error("%s", err)
-		return
-	}
-	if Trans {
-		return
-	}
-
-	run(code)
+	PrepareMacro()
+	// run()
 }

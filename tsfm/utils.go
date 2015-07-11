@@ -8,6 +8,8 @@ import (
 
 var (
 	ErrNotAPattern = errors.New("not a pattern")
+	ErrWrongStruct = errors.New("wrong struct")
+	ErrSyntaxExist = errors.New("syntax exist")
 )
 
 func Walker(o *scmgo.Cons, f func(o *scmgo.Cons) (err error)) (err error) {
