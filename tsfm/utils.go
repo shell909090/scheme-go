@@ -2,8 +2,11 @@ package tsfm
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 
 	"bitbucket.org/shell909090/scheme-go/scmgo"
+	logging "github.com/op/go-logging"
 )
 
 var (
@@ -20,36 +23,45 @@ var (
 	DefineTransformer = &Transformer{syntaxes: make(map[string]*Syntax)}
 )
 
-func Walker(o *scmgo.Cons, f func(o *scmgo.Cons) (scmgo.SchemeObject, error)) (err error) {
-	var ok bool
-	var tmplist *scmgo.Cons
-	var tmp scmgo.SchemeObject
-	for n := o; n != scmgo.Onil; {
-		tmplist, ok = n.Car.(*scmgo.Cons)
-		if ok {
-			tmp, err = f(tmplist)
-			if err != nil {
-				log.Error("%s", err.Error())
-				return
-			}
-			if tmp != nil {
-				n.Car = tmp
-			}
+type Literals map[string]int
 
-			tmplist, ok = n.Car.(*scmgo.Cons)
-			if ok {
-				err = Walker(tmplist, f)
-				if err != nil {
-					log.Error("%s", err.Error())
-					return
-				}
-			}
-		}
-
-		n, ok = n.Cdr.(*scmgo.Cons)
-		if !ok { // improper
+func ReadLiterals(l *scmgo.Cons) (literals Literals, err error) {
+	var s *scmgo.Symbol
+	literals = make(Literals, 0)
+	for l != scmgo.Onil {
+		s, l, err = l.PopSymbol()
+		if err != nil {
 			return
 		}
+		literals[s.Name] = 1
 	}
 	return
+}
+
+func (l Literals) CheckLiteral(s string) (yes bool) {
+	_, yes = l[s]
+	return
+}
+
+type MatchResult struct {
+	m map[string]scmgo.SchemeObject
+}
+
+func CreateMatchResult() (m *MatchResult) {
+	m = &MatchResult{
+		m: make(map[string]scmgo.SchemeObject),
+	}
+	return
+}
+
+func (m *MatchResult) Add(name string, value scmgo.SchemeObject) {
+	m.m[name] = value
+}
+
+func (m *MatchResult) Format() (r string) {
+	var strs []string
+	for name, value := range m.m {
+		strs = append(strs, fmt.Sprintf("%s = %s", name, value.Format()))
+	}
+	return strings.Join(strs, "\n")
 }

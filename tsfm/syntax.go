@@ -1,54 +1,6 @@
 package tsfm
 
-import (
-	"fmt"
-	"strings"
-
-	"bitbucket.org/shell909090/scheme-go/scmgo"
-)
-
-type Literals map[string]int
-
-func ReadLiterals(l *scmgo.Cons) (literals Literals, err error) {
-	var s *scmgo.Symbol
-	literals = make(Literals, 0)
-	for l != scmgo.Onil {
-		s, l, err = l.PopSymbol()
-		if err != nil {
-			return
-		}
-		literals[s.Name] = 1
-	}
-	return
-}
-
-func (l Literals) CheckLiteral(s string) (yes bool) {
-	_, yes = l[s]
-	return
-}
-
-type MatchResult struct {
-	m map[string]scmgo.SchemeObject
-}
-
-func CreateMatchResult() (m *MatchResult) {
-	m = &MatchResult{
-		m: make(map[string]scmgo.SchemeObject),
-	}
-	return
-}
-
-func (m *MatchResult) Add(name string, value scmgo.SchemeObject) {
-	m.m[name] = value
-}
-
-func (m *MatchResult) Format() (r string) {
-	var strs []string
-	for name, value := range m.m {
-		strs = append(strs, fmt.Sprintf("%s = %s", name, value.Format()))
-	}
-	return strings.Join(strs, "\n")
-}
+import "bitbucket.org/shell909090/scheme-go/scmgo"
 
 type Rule struct {
 	pattern  scmgo.SchemeObject
@@ -172,7 +124,7 @@ func (s *Syntax) Transform(i scmgo.SchemeObject) (result scmgo.SchemeObject, err
 		}
 		if yes {
 			log.Info("match result: %s", mr.Format())
-			return mr.Copy(rule.t) // render template
+			return Render(mr, rule.template)
 		}
 	}
 	return nil, ErrNoRule

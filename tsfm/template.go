@@ -1,46 +1,63 @@
 package tsfm
 
-// FIXME: render with ...
-func Render(mr *MatchResult, template scmgo.SchemeObject) (result scmgo.SchemeObject, err error) {
-	var ok bool
-	var i scmgo.SchemeObject
-	switch t := obj.(type) {
-	case *scmgo.Symbol:
-		if t.Name == "..." {
+import "bitbucket.org/shell909090/scheme-go/scmgo"
 
+// FIXME: render with ...
+func RenderList(mr *MatchResult, template *scmgo.Cons) (result scmgo.SchemeObject, err error) {
+	var ok bool
+	var obj scmgo.SchemeObject
+	c := &scmgo.Cons{}
+	result = c
+
+	for {
+		obj, err = Render(mr, template.Car)
+		if err != nil {
+			log.Error("%s", err.Error())
+			return
 		}
-		if o, ok := m.m[t.Name]; ok {
-			return o, nil
+		c.Car = obj
+
+		if template.Cdr == scmgo.Onil {
+			c.Cdr = scmgo.Onil
+			return
 		}
-	case *scmgo.Cons:
-		c := &scmgo.Cons{}
-		result = c
-		for {
-			i, err = m.Copy(t.Car)
+
+		template, ok = template.Cdr.(*scmgo.Cons)
+		if !ok { // improper
+			obj, err = Render(mr, template.Cdr)
 			if err != nil {
 				log.Error("%s", err.Error())
 				return
 			}
-			c.Car = i
-
-			if t.Cdr == scmgo.Onil {
-				c.Cdr = scmgo.Onil
-				return
-			}
-
-			t, ok = t.Cdr.(*scmgo.Cons)
-			if !ok { // improper
-				i, err = m.Copy(t.Cdr)
-				if err != nil {
-					log.Error("%s", err.Error())
-					return
-				}
-				c.Cdr = i
-			}
-			c.Cdr = &scmgo.Cons{}
-			c = c.Cdr.(*scmgo.Cons)
+			c.Cdr = obj
+			return
 		}
-		return
+
+		if isEllipsis(template) {
+			obj, ok = mr.m[template.Car.(*scmgo.Symbol).Name]
+			if !ok {
+				return nil, ErrElpsAfterNoVar
+			}
+			c.Cdr = obj
+			return
+		}
+
+		c.Cdr = &scmgo.Cons{}
+		c = c.Cdr.(*scmgo.Cons)
 	}
-	return obj, nil
+	return
+}
+
+func Render(mr *MatchResult, template scmgo.SchemeObject) (result scmgo.SchemeObject, err error) {
+	var ok bool
+	switch tmp := template.(type) {
+	case *scmgo.Symbol:
+		result, ok = mr.m[tmp.Name]
+		if ok {
+			return
+		}
+	case *scmgo.Cons:
+		return RenderList(mr, tmp)
+	}
+	return template, nil
 }

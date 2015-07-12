@@ -63,3 +63,37 @@ func (t *Transformer) Transform(src scmgo.SchemeObject) (code scmgo.SchemeObject
 
 	return
 }
+
+func Walker(o *scmgo.Cons, f func(o *scmgo.Cons) (scmgo.SchemeObject, error)) (err error) {
+	var ok bool
+	var tmplist *scmgo.Cons
+	var tmp scmgo.SchemeObject
+	for n := o; n != scmgo.Onil; {
+		tmplist, ok = n.Car.(*scmgo.Cons)
+		if ok {
+			tmp, err = f(tmplist)
+			if err != nil {
+				log.Error("%s", err.Error())
+				return
+			}
+			if tmp != nil {
+				n.Car = tmp
+			}
+
+			tmplist, ok = n.Car.(*scmgo.Cons)
+			if ok {
+				err = Walker(tmplist, f)
+				if err != nil {
+					log.Error("%s", err.Error())
+					return
+				}
+			}
+		}
+
+		n, ok = n.Cdr.(*scmgo.Cons)
+		if !ok { // improper
+			return
+		}
+	}
+	return
+}
