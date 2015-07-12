@@ -77,26 +77,24 @@ func parse(filename string) (code scmgo.SchemeObject, err error) {
 }
 
 func run() (err error) {
+	os.Stdout.WriteString("-------parse-------\n")
 	code, err := parse(flag.Args()[0])
 	if err != nil {
 		return
 	}
-
 	if Parse {
-		os.Stdout.WriteString("-------parse-------\n")
 		os.Stdout.WriteString(code.Format())
 		os.Stdout.Write([]byte("\n"))
 		return
 	}
 
+	os.Stdout.WriteString("-------transform-------\n")
 	code, err = tsfm.DefineTransformer.Transform(code)
 	if err != nil {
 		log.Error("%s", err)
 		return
 	}
-
 	if Trans {
-		os.Stdout.WriteString("-------transform-------\n")
 		os.Stdout.WriteString(code.Format())
 		os.Stdout.WriteString("\n")
 		return

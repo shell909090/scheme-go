@@ -54,7 +54,7 @@ func (t *Transformer) Transform(src scmgo.SchemeObject) (code scmgo.SchemeObject
 			return
 		}
 
-		log.Warning("render result: %s", result.Format())
+		log.Info("render result: %s", result.Format())
 		return
 	})
 	if err != nil {

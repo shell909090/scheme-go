@@ -15,14 +15,14 @@ func ParseRule(rule *scmgo.Cons) (r *Rule, err error) {
 		log.Error("%s", err.Error())
 		return
 	}
-	log.Info("pattern: %s", r.pattern.Format())
+	log.Debug("pattern: %s", r.pattern.Format())
 
 	r.template, rule, err = rule.PopCons()
 	if err != nil {
 		log.Error("%s", err.Error())
 		return
 	}
-	log.Info("template: %s", r.template.Format())
+	log.Debug("template: %s", r.template.Format())
 	return
 }
 
@@ -117,13 +117,14 @@ func (s *Syntax) Transform(i scmgo.SchemeObject) (result scmgo.SchemeObject, err
 	var yes bool
 	for _, rule := range s.rules {
 		mr := CreateMatchResult()
+		log.Debug("match: %s", rule.pattern.Format())
 		yes, err = Match(rule.pattern, i, s.literals, mr)
 		if err != nil {
 			log.Error("%s", err.Error())
 			return
 		}
 		if yes {
-			log.Info("match result: %s", mr.Format())
+			log.Debug("result: %s", mr.Format())
 			return Render(mr, rule.template)
 		}
 	}

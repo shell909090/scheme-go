@@ -2,7 +2,6 @@ package tsfm
 
 import "bitbucket.org/shell909090/scheme-go/scmgo"
 
-// FIXME: render with ...
 func RenderList(mr *MatchResult, template *scmgo.Cons) (result scmgo.SchemeObject, err error) {
 	var ok bool
 	var obj scmgo.SchemeObject

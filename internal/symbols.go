@@ -45,11 +45,11 @@ func Lambda(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.
 	return
 }
 
-func Cond(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
-	// coming from apply, so pass this frame.
-	next = scmgo.CreateCondFrame(o, f.GetEnv(), f.GetParent())
-	return
-}
+// func Cond(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
+// 	// coming from apply, so pass this frame.
+// 	next = scmgo.CreateCondFrame(o, f.GetEnv(), f.GetParent())
+// 	return
+// }
 
 func If(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
 	cond, o, err := o.Pop()
@@ -105,7 +105,8 @@ func init() {
 	// eq? equal?
 	// not and or
 	// cond if when
-	scmgo.RegisterInternalProcedure("cond", Cond, false)
+	// scmgo.RegisterInternalProcedure("cond", Cond, false)
+	scmgo.RegisterInternalProcedure("if", If, false)
 
 	scmgo.RegisterInternalProcedure("display", Display, true)
 	scmgo.RegisterInternalProcedure("error", Display, true)

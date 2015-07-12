@@ -19,14 +19,11 @@ func isEllipsis(plist *scmgo.Cons) (yes bool) {
 }
 
 func MatchList(plist, olist *scmgo.Cons, literals Literals, mr *MatchResult) (yes bool, err error) {
-	var ok bool
 	for plist != scmgo.Onil && olist != scmgo.Onil {
-		log.Debug("now match: %s %s", plist.Format(), olist.Format())
-
 		if isEllipsis(plist) {
 			// ellipsis, capture rest into varible and return.
 			mr.Add(plist.Car.(*scmgo.Symbol).Name, olist)
-			return
+			return true, nil
 		}
 
 		yes, err = Match(plist.Car, olist.Car, literals, mr)
@@ -38,19 +35,23 @@ func MatchList(plist, olist *scmgo.Cons, literals Literals, mr *MatchResult) (ye
 			return false, nil
 		}
 
-		switch pnext := plist.Cdr.(type) {
-		case *scmgo.Cons: // continue on list.
-			plist = pnext
-			olist, ok = olist.Cdr.(*scmgo.Cons)
-			if !ok {
-				return false, nil
-			}
-		default: // pair in the end.
+		pnext, ok := plist.Cdr.(*scmgo.Cons)
+		if !ok { // improper
 			if _, ok = olist.Cdr.(*scmgo.Cons); ok {
 				return false, nil
 			}
 			return Match(plist.Cdr, olist.Cdr, literals, mr)
 		}
+
+		plist = pnext
+		olist, ok = olist.Cdr.(*scmgo.Cons)
+		if !ok {
+			return false, nil
+		}
+	}
+	if isEllipsis(plist) {
+		mr.Add(plist.Car.(*scmgo.Symbol).Name, olist)
+		return true, nil
 	}
 	return olist == scmgo.Onil && plist == scmgo.Onil, nil
 }
