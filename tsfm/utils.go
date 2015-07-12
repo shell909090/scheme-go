@@ -15,6 +15,11 @@ var (
 	ErrNoRule         = errors.New("no rule match in syntax")
 )
 
+var (
+	log               = logging.MustGetLogger("trans")
+	DefineTransformer = &Transformer{syntaxes: make(map[string]*Syntax)}
+)
+
 func Walker(o *scmgo.Cons, f func(o *scmgo.Cons) (scmgo.SchemeObject, error)) (err error) {
 	var ok bool
 	var tmplist *scmgo.Cons
@@ -48,28 +53,3 @@ func Walker(o *scmgo.Cons, f func(o *scmgo.Cons) (scmgo.SchemeObject, error)) (e
 	}
 	return
 }
-
-// func FilterList(o *scmgo.Cons, f func(i scmgo.SchemeObject) (yes bool, err error)) (err error) {
-// 	var ok, yes bool
-// 	for c := o; c != scmgo.Onil; {
-// 		yes, err = f(c.Car)
-// 		if err != nil {
-// 			log.Error("%s", err)
-// 			return
-// 		}
-// 		if yes {
-// 			n, ok := c.Cdr.(*scmgo.Cons)
-// 			if !ok {
-// 				return scmgo.ErrISNotAList
-// 			}
-// 			c.Car = n.Car
-// 			c.Cdr = n.Cdr
-// 		} else {
-// 			c, ok = c.Cdr.(*scmgo.Cons)
-// 			if !ok {
-// 				return scmgo.ErrISNotAList
-// 			}
-// 		}
-// 	}
-// 	return
-// }

@@ -1,14 +1,6 @@
 package tsfm
 
-import (
-	"bitbucket.org/shell909090/scheme-go/scmgo"
-	logging "github.com/op/go-logging"
-)
-
-var (
-	log               = logging.MustGetLogger("trans")
-	DefineTransformer = &Transformer{syntaxes: make(map[string]*Syntax)}
-)
+import "bitbucket.org/shell909090/scheme-go/scmgo"
 
 type Transformer struct {
 	syntaxes map[string]*Syntax
