@@ -23,38 +23,33 @@ func (l Literals) CheckLiteral(s string) (yes bool) {
 }
 
 type Rule struct {
-	p Pattern
-	t Template
+	pattern  scmgo.SchemeObject
+	template scmgo.SchemeObject
 }
 
-func ParseRule(literals Literals, rule *scmgo.Cons) (r *Rule, err error) {
+func ParseRule(rule *scmgo.Cons) (r *Rule, err error) {
 	r = &Rule{}
 
-	pattern, rule, err := rule.PopCons()
+	r.pattern, rule, err = rule.PopCons()
 	if err != nil {
 		log.Error("%s", err.Error())
 		return
 	}
-	r.p, err = ParsePattern(literals, pattern)
-	if err != nil {
-		log.Error("%s", err.Error())
-		return
-	}
-	log.Debug("rule: %s", r.p.Format())
+	log.Info("pattern: %s", r.pattern.Format())
 
-	_, rule, err = rule.PopCons()
+	r.template, rule, err = rule.PopCons()
 	if err != nil {
 		log.Error("%s", err.Error())
 		return
 	}
-	// ParseTemplate
-
+	log.Info("template: %s", r.template.Format())
 	return
 }
 
 type Syntax struct {
-	Keyword string
-	rules   []*Rule
+	Keyword  string
+	literals Literals
+	rules    []*Rule
 }
 
 func DefineSyntax(obj scmgo.SchemeObject) (s *Syntax, err error) {
@@ -80,7 +75,7 @@ func DefineSyntax(obj scmgo.SchemeObject) (s *Syntax, err error) {
 	}
 	s = &Syntax{}
 	s.Keyword = sname.Name
-	log.Debug("syntax: %s", s.Keyword)
+	log.Info("syntax: %s", s.Keyword)
 
 	syntax, _, err := define.PopCons()
 	if err != nil {
@@ -112,7 +107,7 @@ func (s *Syntax) Parse(syntax *scmgo.Cons) (err error) {
 		log.Error("%s", err.Error())
 		return
 	}
-	literals, err := ReadLiterals(sliterals)
+	s.literals, err = ReadLiterals(sliterals)
 	if err != nil {
 		log.Error("%s", err.Error())
 		return
@@ -126,7 +121,7 @@ func (s *Syntax) Parse(syntax *scmgo.Cons) (err error) {
 			log.Error("%s", err.Error())
 			return
 		}
-		r, err = ParseRule(literals, rule)
+		r, err = ParseRule(rule)
 		if err != nil {
 			log.Error("%s", err.Error())
 			return
@@ -138,20 +133,18 @@ func (s *Syntax) Parse(syntax *scmgo.Cons) (err error) {
 }
 
 func (s *Syntax) Transform(i scmgo.SchemeObject) (result scmgo.SchemeObject, err error) {
+	log.Info("transform: %s", i.Format())
 	var yes bool
 	for _, rule := range s.rules {
-		log.Debug("try rule: %s", rule.p.Format())
-
 		mr := CreateMatchResult()
-		yes, err = rule.p.Match(mr, i)
+		yes, err = Match(rule.pattern, i, s.literals, mr)
 		if err != nil {
 			log.Error("%s", err.Error())
 			return
 		}
 		if yes {
-			log.Warning("%s", mr.Format())
-			// TODO: render template
-			return
+			log.Info("match result: %s", mr.Format())
+			return mr.Copy(rule.t) // render template
 		}
 	}
 	return nil, ErrNoRule

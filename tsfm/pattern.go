@@ -2,131 +2,34 @@ package tsfm
 
 import "bitbucket.org/shell909090/scheme-go/scmgo"
 
-type PatternObject struct {
-}
-
-func (p *PatternObject) Eval(env *scmgo.Environ, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
-	panic("run eval of partten object")
-}
-
-type Pattern interface {
-	Eval(env *scmgo.Environ, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error)
-	Format() (r string)
-	Match(mr *MatchResult, i scmgo.SchemeObject) (yes bool, err error)
-}
-
-type PatternAny struct {
-	PatternObject
-}
-
-func (p *PatternAny) Format() (r string) {
-	return "_"
-}
-
-func (p *PatternAny) Match(mr *MatchResult, i scmgo.SchemeObject) (yes bool, err error) {
-	return true, nil
-}
-
-type PatternVariable struct {
-	PatternObject
-	toName string
-}
-
-func CreatePatternVariable(toname string) (p *PatternVariable) {
-	p = &PatternVariable{toName: toname}
-	return
-}
-
-func (p *PatternVariable) Format() (r string) {
-	return p.toName
-}
-
-func (p *PatternVariable) Match(mr *MatchResult, i scmgo.SchemeObject) (yes bool, err error) {
-	mr.Add(p.toName, i)
-	return true, nil
-}
-
-type PatternEllipses struct {
-	PatternObject
-	toName string
-}
-
-func CreatePatternEllipses(pv *PatternVariable) (p *PatternEllipses) {
-	p = &PatternEllipses{toName: pv.toName}
-	return
-}
-
-func (p *PatternEllipses) Format() (r string) {
-	return p.toName + " ..."
-}
-
-func (p *PatternEllipses) Match(mr *MatchResult, i scmgo.SchemeObject) (yes bool, err error) {
-	mr.Add(p.toName, i)
-	return true, nil
-}
-
-type PatternLiteral struct {
-	PatternObject
-	name string
-}
-
-func CreatePatternLiteral(name string) (p *PatternLiteral) {
-	p = &PatternLiteral{name: name}
-	return
-}
-
-func (p *PatternLiteral) Format() (r string) {
-	return "'" + p.name
-}
-
-func (p *PatternLiteral) Match(mr *MatchResult, i scmgo.SchemeObject) (yes bool, err error) {
-	t, ok := i.(*scmgo.Symbol)
+func isEllipsis(plist *scmgo.Cons) (yes bool) {
+	_, ok := plist.Car.(*scmgo.Symbol)
 	if !ok {
-		return false, nil
+		return false
 	}
-	return t.Name == p.name, nil
-}
-
-type PatternList struct {
-	PatternObject
-	rule_list *scmgo.Cons
-}
-
-func CreatePatternList() (p *PatternList) {
-	p = &PatternList{rule_list: scmgo.Onil}
-	return
-}
-
-func (p *PatternList) Format() (r string) {
-	return p.rule_list.Format()
-}
-
-func (p *PatternList) Match(mr *MatchResult, i scmgo.SchemeObject) (yes bool, err error) {
-	olist, ok := i.(*scmgo.Cons)
+	next, err := plist.GetN(1)
+	if err != nil {
+		return false
+	}
+	next_sym, ok := next.(*scmgo.Symbol)
 	if !ok {
-		return false, nil
+		return false
 	}
-	rlist := p.rule_list
+	return next_sym.Name == "..."
+}
 
-	for olist != scmgo.Onil || rlist != scmgo.Onil {
-		log.Info("now match: %s %s", olist.Format(), rlist.Format())
+func MatchList(plist, olist *scmgo.Cons, literals Literals, mr *MatchResult) (yes bool, err error) {
+	var ok bool
+	for plist != scmgo.Onil && olist != scmgo.Onil {
+		log.Debug("now match: %s %s", plist.Format(), olist.Format())
 
-		obj := olist.Car
-		subp, ok := rlist.Car.(Pattern)
-		if !ok {
-			return false, ErrNotAPattern
+		if isEllipsis(plist) {
+			// ellipsis, capture rest into varible and return.
+			mr.Add(plist.Car.(*scmgo.Symbol).Name, olist)
+			return
 		}
 
-		if _, ok := subp.(*PatternEllipses); ok {
-			yes, err = subp.Match(mr, olist)
-			if err != nil {
-				log.Error("%s", err.Error())
-				return
-			}
-			return yes, nil
-		}
-
-		yes, err = subp.Match(mr, obj)
+		yes, err = Match(plist.Car, olist.Car, literals, mr)
 		if err != nil {
 			log.Error("%s", err.Error())
 			return
@@ -135,74 +38,45 @@ func (p *PatternList) Match(mr *MatchResult, i scmgo.SchemeObject) (yes bool, er
 			return false, nil
 		}
 
-		switch t := olist.Cdr.(type) {
+		switch pnext := plist.Cdr.(type) {
 		case *scmgo.Cons: // continue on list.
-			olist = t
-			rlist, ok = rlist.Cdr.(*scmgo.Cons)
+			plist = pnext
+			olist, ok = olist.Cdr.(*scmgo.Cons)
 			if !ok {
 				return false, nil
 			}
 		default: // pair in the end.
-			subp, ok = rlist.Cdr.(Pattern)
-			if !ok { // they are just not match
+			if _, ok = olist.Cdr.(*scmgo.Cons); ok {
 				return false, nil
 			}
-
-			yes, err = subp.Match(mr, olist.Cdr)
-			return // match or not, they are final.
+			return Match(plist.Cdr, olist.Cdr, literals, mr)
 		}
 	}
-
-	if olist == scmgo.Onil && rlist == scmgo.Onil {
-		return true, nil
-	}
-	return false, nil
+	return olist == scmgo.Onil && plist == scmgo.Onil, nil
 }
 
-func ParsePattern(literals Literals, pattern *scmgo.Cons) (p Pattern, err error) {
-	var ok bool
-	var pv *PatternVariable
-	pl := CreatePatternList()
-	o := pattern
-LOOP:
-	for o != scmgo.Onil {
-		switch ttmp := o.Car.(type) {
-		case *scmgo.Symbol:
-			switch {
-			case ttmp.Name == "_":
-				p = &PatternAny{}
-			case ttmp.Name == "...":
-				pv, ok = pl.rule_list.Car.(*PatternVariable)
-				if !ok {
-					return nil, ErrElpsAfterNoVar
-				}
-				pl.rule_list.Car = CreatePatternEllipses(pv)
-				// that's the end
-				break LOOP
-			case literals.CheckLiteral(ttmp.Name):
-				p = CreatePatternLiteral(ttmp.Name)
-			default:
-				p = CreatePatternVariable(ttmp.Name)
+func Match(pattern, obj scmgo.SchemeObject, literals Literals, mr *MatchResult) (yes bool, err error) {
+	switch tmp := pattern.(type) {
+	case *scmgo.Symbol:
+		switch {
+		case tmp.Name == "_":
+			return true, nil
+		case literals.CheckLiteral(tmp.Name):
+			tmpo, ok := obj.(*scmgo.Symbol)
+			if !ok {
+				return false, nil
 			}
-		case *scmgo.Cons:
-			p, err = ParsePattern(literals, ttmp)
+			return tmpo.Name == tmp.Name, nil
 		default:
-			panic("not support yet")
+			mr.Add(tmp.Name, obj)
+			return true, nil
 		}
-
-		if err != nil {
-			log.Error("%s", err.Error())
-			return
-		}
-		pl.rule_list = pl.rule_list.Push(p)
-
-		o, ok = o.Cdr.(*scmgo.Cons)
+	case *scmgo.Cons:
+		tmpo, ok := obj.(*scmgo.Cons)
 		if !ok {
-			pl.rule_list, err = scmgo.ReverseList(pl.rule_list, o.Cdr)
-			return pl, err
+			return false, nil
 		}
+		return MatchList(tmp, tmpo, literals, mr)
 	}
-
-	pl.rule_list, err = scmgo.ReverseList(pl.rule_list, scmgo.Onil)
-	return pl, err
+	return false, ErrWrongTpInPtn
 }

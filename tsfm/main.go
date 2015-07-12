@@ -46,10 +46,9 @@ func (t *Transformer) Transform(src scmgo.SchemeObject) (code scmgo.SchemeObject
 		return nil, scmgo.ErrUnknown
 	}
 
-	err = Walker(c, func(o *scmgo.Cons) (err error) {
-		s, _, err := o.PopSymbol()
-		if err != nil { // FIXME: not a symbol is not a error, but maybe.
-			err = nil
+	err = Walker(c, func(o *scmgo.Cons) (result scmgo.SchemeObject, err error) {
+		s, ok := o.Car.(*scmgo.Symbol)
+		if !ok { // not a symbol is not a error.
 			return
 		}
 		syntax, ok := t.syntaxes[s.Name]
@@ -57,11 +56,13 @@ func (t *Transformer) Transform(src scmgo.SchemeObject) (code scmgo.SchemeObject
 			return
 		}
 
-		_, err = syntax.Transform(o)
+		result, err = syntax.Transform(o)
 		if err != nil {
 			log.Error("%s", err.Error())
 			return
-		} // FIXME: how to write o back?
+		}
+
+		log.Warning("render result: %s", result.Format())
 		return
 	})
 	if err != nil {
