@@ -2,22 +2,6 @@ package tsfm
 
 import "bitbucket.org/shell909090/scheme-go/scmgo"
 
-func isEllipsis(plist *scmgo.Cons) (yes bool) {
-	_, ok := plist.Car.(*scmgo.Symbol)
-	if !ok {
-		return false
-	}
-	next, err := plist.GetN(1)
-	if err != nil {
-		return false
-	}
-	next_sym, ok := next.(*scmgo.Symbol)
-	if !ok {
-		return false
-	}
-	return next_sym.Name == "..."
-}
-
 func MatchList(plist, olist *scmgo.Cons, literals Literals, mr *MatchResult) (yes bool, err error) {
 	for plist != scmgo.Onil && olist != scmgo.Onil {
 		if isEllipsis(plist) {

@@ -65,3 +65,19 @@ func (m *MatchResult) Format() (r string) {
 	}
 	return strings.Join(strs, "\n")
 }
+
+func isEllipsis(plist *scmgo.Cons) (yes bool) {
+	_, ok := plist.Car.(*scmgo.Symbol)
+	if !ok {
+		return false
+	}
+	next, err := plist.GetN(1)
+	if err != nil {
+		return false
+	}
+	next_sym, ok := next.(*scmgo.Symbol)
+	if !ok {
+		return false
+	}
+	return next_sym.Name == "..."
+}
