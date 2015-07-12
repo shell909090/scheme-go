@@ -21,6 +21,10 @@ var (
 	DefaultEnv   *Environ = &Environ{Parent: nil, Names: DefaultNames}
 )
 
+type Formatter interface {
+	Format() (r string)
+}
+
 func ReverseList(head *Cons, tail SchemeObject) (result *Cons, err error) {
 	// image a list from left to right.
 	var ok bool
@@ -98,7 +102,7 @@ func EvalAndReturn(i SchemeObject, e *Environ, f Frame) (next Frame, err error) 
 
 func Trampoline(f Frame) (result SchemeObject, err error) {
 	for {
-		log.Debug("stack:\n%s", StackFormatter(f))
+		log.Debug("stack:\n%s", StackFormat(f))
 		f, err = f.Exec()
 		if err != nil {
 			log.Error("%s", err)

@@ -21,6 +21,7 @@ var (
 	LogLevel string
 	Parse    bool
 	Trans    bool
+	Run      bool
 )
 
 func SetLogging() (err error) {
@@ -77,15 +78,15 @@ func parse(filename string) (code scmgo.SchemeObject, err error) {
 }
 
 func run() (err error) {
-	os.Stdout.WriteString("-------parse-------\n")
+	os.Stdout.WriteString("-------run parse-------\n")
 	code, err := parse(flag.Args()[0])
 	if err != nil {
 		return
 	}
 	if Parse {
-		os.Stdout.WriteString(code.Format())
+		os.Stdout.WriteString("-------parsed-------\n")
+		os.Stdout.WriteString(scmgo.Format(code))
 		os.Stdout.Write([]byte("\n"))
-		return
 	}
 
 	os.Stdout.WriteString("-------transform-------\n")
@@ -95,11 +96,14 @@ func run() (err error) {
 		return
 	}
 	if Trans {
-		os.Stdout.WriteString(code.Format())
+		os.Stdout.WriteString("-------compiled-------\n")
+		os.Stdout.WriteString(scmgo.Format(code))
 		os.Stdout.WriteString("\n")
-		return
 	}
 
+	if !Run {
+		return
+	}
 	os.Stdout.WriteString("-------runtime-------\n")
 	result, err := scmgo.RunCode(code)
 	if err != nil {
@@ -108,7 +112,7 @@ func run() (err error) {
 	}
 
 	os.Stdout.WriteString("-------output-------\n")
-	os.Stdout.WriteString(result.Format())
+	os.Stdout.WriteString(scmgo.Format(result))
 	os.Stdout.WriteString("\n")
 	return
 }
@@ -116,8 +120,9 @@ func run() (err error) {
 func main() {
 	flag.StringVar(&LogLevel, "loglevel", "INFO", "loglevel")
 	flag.StringVar(&LogFile, "logfile", "", "logfile")
-	flag.BoolVar(&Parse, "parse", false, "just parse, not run")
-	flag.BoolVar(&Trans, "transform", false, "just parse and transform, not run")
+	flag.BoolVar(&Parse, "parse", false, "print parse result")
+	flag.BoolVar(&Trans, "transform", false, "print transform result")
+	flag.BoolVar(&Run, "run", true, "run code")
 
 	flag.Parse()
 	if len(flag.Args()) < 1 {

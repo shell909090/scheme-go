@@ -24,24 +24,17 @@ func (p *InternalProcedure) IsApplicativeOrder() bool {
 	return p.applicative
 }
 
-// func (p *InternalProcedure) Eval(env *Environ, f Frame) (value SchemeObject, next Frame, err error) {
-// 	panic("run eval of internal procedure")
-// }
-
 func (p *InternalProcedure) Apply(args *Cons, f Frame) (value SchemeObject, next Frame, err error) {
-	log.Info("apply !%s, argument: %s", p.Name, args.Format())
+	log.Info("internal %s", p.Name)
+	// internal procedure has to remember, we now in apply frame, will be abandon next.
 	value, next, err = p.procedure(args, f)
 	switch {
 	case next != nil:
 		log.Info("next: %p", next)
 	case value != nil:
-		log.Info("result: %s", value.Format())
+		log.Info("result: %s", Format(value))
 	}
 	return
-}
-
-func (p *InternalProcedure) Format() (r string) {
-	return "!" + p.Name
 }
 
 type LambdaProcedure struct {
@@ -54,10 +47,6 @@ type LambdaProcedure struct {
 func (p *LambdaProcedure) IsApplicativeOrder() bool {
 	return true
 }
-
-// func (p *LambdaProcedure) Eval(env *Environ, f Frame) (value SchemeObject, next Frame, err error) {
-// 	panic("run eval of lambda procedure")
-// }
 
 func setup_args(env *Environ, p *LambdaProcedure, o *Cons) (err error) {
 	var t SchemeObject
@@ -98,16 +87,8 @@ func (p *LambdaProcedure) Apply(args *Cons, f Frame) (value SchemeObject, next F
 	if err != nil {
 		return
 	}
-	log.Info("apply %s, env:\n%s", p.Format(), env.Format())
+	log.Info("lambda %s", Format(p))
 	next = CreateBeginFrame(
 		p.Obj, env, f.GetParent()) // coming from apply, so pass this frame.
 	return
-}
-
-func (p *LambdaProcedure) Format() (r string) {
-	name := p.Name
-	if name == "" {
-		name = "lambda"
-	}
-	return "<" + name + ">"
 }

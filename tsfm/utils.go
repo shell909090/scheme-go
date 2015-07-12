@@ -61,7 +61,7 @@ func (m *MatchResult) Add(name string, value scmgo.SchemeObject) {
 func (m *MatchResult) Format() (r string) {
 	var strs []string
 	for name, value := range m.m {
-		strs = append(strs, fmt.Sprintf("%s = %s", name, value.Format()))
+		strs = append(strs, fmt.Sprintf("%s = %s", name, scmgo.Format(value)))
 	}
 	return strings.Join(strs, "\n")
 }

@@ -45,12 +45,6 @@ func Lambda(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.
 	return
 }
 
-// func Cond(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
-// 	// coming from apply, so pass this frame.
-// 	next = scmgo.CreateCondFrame(o, f.GetEnv(), f.GetParent())
-// 	return
-// }
-
 func If(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
 	cond, o, err := o.Pop()
 	if err != nil {
@@ -80,7 +74,7 @@ func Display(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo
 		return
 	}
 
-	fmt.Printf("%s", o.Car.Format())
+	fmt.Printf("%s", scmgo.Format(o.Car))
 	return scmgo.Onil, nil, nil
 }
 
@@ -105,11 +99,9 @@ func init() {
 	// eq? equal?
 	// not and or
 	// cond if when
-	// scmgo.RegisterInternalProcedure("cond", Cond, false)
 	scmgo.RegisterInternalProcedure("if", If, false)
 
 	scmgo.RegisterInternalProcedure("display", Display, true)
-	scmgo.RegisterInternalProcedure("error", Display, true)
 	scmgo.RegisterInternalProcedure("newline", Newline, true)
 	// exit
 }

@@ -1,43 +1,16 @@
 package scmgo
 
-import (
-	"bytes"
-	"strconv"
-)
-
-type Formatter interface {
-	Format() (r string)
-}
-
-type SchemeObject interface {
-	Formatter
-}
+type SchemeObject interface{}
 
 type Symbol struct {
 	Name string
-}
-
-func (o *Symbol) Format() (r string) {
-	return o.Name
 }
 
 type Quote struct {
 	Objs SchemeObject
 }
 
-func (o *Quote) Format() (r string) {
-	return "'" + o.Objs.Format()
-}
-
 type Boolean bool
-
-func (o Boolean) Format() (r string) {
-	if o {
-		return "#t"
-	} else {
-		return "#f"
-	}
-}
 
 const (
 	Otrue  = Boolean(true)
@@ -45,22 +18,8 @@ const (
 )
 
 type Integer int
-
-func (o Integer) Format() (r string) {
-	return strconv.FormatInt(int64(o), 10)
-}
-
 type Float float64
-
-func (o Float) Format() (r string) {
-	return strconv.FormatFloat(float64(o), 'f', 2, 64)
-}
-
 type String string
-
-func (o String) Format() (r string) {
-	return "\"" + string(o) + "\""
-}
 
 type Cons struct {
 	Car SchemeObject
@@ -68,15 +27,6 @@ type Cons struct {
 }
 
 var Onil = &Cons{}
-
-func (o *Cons) Format() (r string) {
-	buf := bytes.NewBuffer(nil)
-	if _, err := PrettyFormat(buf, o, 0); err != nil {
-		log.Error("%s", err)
-		return ""
-	}
-	return buf.String()
-}
 
 func (o *Cons) Pop() (r SchemeObject, next *Cons, err error) {
 	if o == Onil {
@@ -158,7 +108,7 @@ func (o *Cons) PopSymbol() (s *Symbol, next *Cons, err error) {
 		return nil, nil, ErrType
 	}
 	return
-}
+} // O(1)
 
 func (o *Cons) PopCons() (s *Cons, next *Cons, err error) {
 	t, next, err := o.Pop()
@@ -170,4 +120,4 @@ func (o *Cons) PopCons() (s *Cons, next *Cons, err error) {
 		return nil, nil, ErrType
 	}
 	return
-}
+} // O(1)

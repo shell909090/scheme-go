@@ -2,11 +2,25 @@ package scmgo
 
 import (
 	"bytes"
+	"fmt"
 	"io"
+	"strconv"
 	"strings"
 )
 
 var EmptySpace = []byte("                                        ")
+
+func fullSpace(s io.Writer, iv int) {
+	for i := 0; i < iv; i++ {
+		if iv-i > len(EmptySpace) {
+			s.Write(EmptySpace)
+			i += len(EmptySpace)
+		} else {
+			s.Write(EmptySpace[:iv-i])
+			i = iv
+		}
+	}
+}
 
 func AnyList(o *Cons) (yes bool) {
 	ok := true
@@ -25,28 +39,16 @@ func AnyList(o *Cons) (yes bool) {
 func formatOneLineList(list *Cons) (r string) {
 	strs := make([]string, 0)
 	for c := list; c != Onil; {
-		strs = append(strs, c.Car.Format())
+		strs = append(strs, Format(c.Car))
 		tmp, ok := c.Cdr.(*Cons)
 		if !ok {
 			strs = append(strs, ".")
-			strs = append(strs, c.Cdr.Format())
+			strs = append(strs, Format(c.Cdr))
 			break
 		}
 		c = tmp
 	}
 	return "(" + strings.Join(strs, " ") + ")"
-}
-
-func fullSpace(s io.Writer, iv int) {
-	for i := 0; i < iv; i++ {
-		if iv-i > len(EmptySpace) {
-			s.Write(EmptySpace)
-			i += len(EmptySpace)
-		} else {
-			s.Write(EmptySpace[:iv-i])
-			i = iv
-		}
-	}
 }
 
 func formatMultiLineList(s io.Writer, list *Cons, iv int) (rv int, err error) {
@@ -92,7 +94,7 @@ func PrettyFormat(s io.Writer, o SchemeObject, iv int) (rv int, err error) {
 
 	c, ok := o.(*Cons)
 	if !ok { // normal objects
-		str = o.Format()
+		str = Format(o)
 		s.Write([]byte(str))
 		return iv + len(str), err
 	}
@@ -114,12 +116,79 @@ func PrettyFormat(s io.Writer, o SchemeObject, iv int) (rv int, err error) {
 	return iv + len(str), err
 }
 
-func StackFormatter(f Frame) (r string) {
+func Format(o SchemeObject) (r string) {
+	switch t := o.(type) {
+	case *Symbol:
+		return t.Name
+	case *Quote:
+		return "'" + Format(t.Objs)
+	case *Cons:
+		buf := bytes.NewBuffer(nil)
+		if _, err := PrettyFormat(buf, t, 0); err != nil {
+			log.Error("%s", err)
+			return ""
+		}
+		return buf.String()
+	case Boolean:
+		if t {
+			return "#t"
+		} else {
+			return "#f"
+		}
+	case Integer:
+		return strconv.FormatInt(int64(t), 10)
+	case Float:
+		return strconv.FormatFloat(float64(t), 'f', 2, 64)
+	case String:
+		return fmt.Sprintf("\"%s\"", t)
+	case *InternalProcedure:
+		return "!" + t.Name
+	case *LambdaProcedure:
+		name := t.Name
+		if name == "" {
+			name = "lambda"
+		}
+		return "<" + name + ">"
+	}
+	return fmt.Sprintf("%v", o)
+}
+
+func EnvFormat(e *Environ) (r string) {
+	str := make([]string, 0)
+	for ce := e; ce != nil; ce = ce.Parent {
+		strname := make([]string, 0)
+		for k, _ := range ce.Names {
+			strname = append(strname, k)
+		}
+		str = append(str, strings.Join(strname, " "))
+	}
+	return strings.Join(str, "\n")
+}
+
+func StackFormat(f Frame) (r string) {
 	buf := bytes.NewBuffer(nil)
-	for c := f; c != nil; c = c.GetParent() {
-		if _, ok := c.(*EndFrame); !ok {
-			buf.WriteString(c.Format() + "\n")
+	for ; f != nil; f = f.GetParent() {
+		if _, ok := f.(*EndFrame); !ok {
+			buf.WriteString(FrameFormat(f) + "\n")
 		}
 	}
 	return buf.String()
+}
+
+func FrameFormat(f Frame) (r string) {
+	switch t := f.(type) {
+	case *EndFrame:
+		return "End"
+	case *BeginFrame:
+		n, err := t.Obj.Len(false)
+		if err != nil {
+			n = 0
+		}
+		return fmt.Sprintf("Begin: %d", n)
+	case *ApplyFrame:
+		return "Apply"
+	case *IfFrame:
+		return fmt.Sprintf("If:\n%s", Format(t.Cond))
+	}
+	return "Unknown Frame"
 }

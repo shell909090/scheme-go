@@ -26,3 +26,32 @@ func AssertLen(o *scmgo.Cons, length int) (err error) {
 	}
 	return
 }
+
+func ParseParameters(list *scmgo.Cons, v ...interface{}) (next *scmgo.Cons, err error) {
+	for _, a := range v {
+		switch arg := a.(type) {
+		case *string:
+			switch first := list.Car.(type) {
+			case *scmgo.Symbol:
+				*arg = first.Name
+			case *scmgo.String:
+				*arg = string(*first)
+			default:
+				return nil, ErrArguments
+			}
+		case **scmgo.Cons:
+			first, ok := list.Car.(*scmgo.Cons)
+			if !ok {
+				return nil, ErrArguments
+			}
+			*arg = first
+		default:
+			return nil, ErrArguments
+		}
+		_, list, err = list.Pop()
+		if err != nil {
+			return
+		}
+	}
+	return list, nil
+}
