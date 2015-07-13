@@ -5,12 +5,10 @@ import (
 	stdlog "log"
 	"os"
 
-	"bytes"
-
 	_ "bitbucket.org/shell909090/scheme-go/impl"
 	"bitbucket.org/shell909090/scheme-go/parser"
 	"bitbucket.org/shell909090/scheme-go/scm"
-	"bitbucket.org/shell909090/scheme-go/tsfm"
+	// "bitbucket.org/shell909090/scheme-go/tsfm"
 	logging "github.com/op/go-logging"
 )
 
@@ -49,18 +47,18 @@ func SetLogging() (err error) {
 	return
 }
 
-func PrepareMacro() {
-	buf := bytes.NewBufferString(PreDefineMacro)
-	code, err := parser.SourceToAST(buf)
-	if err != nil {
-		panic("impossible")
-	}
-	err = tsfm.DefineTransformer.Parse(code)
-	if err != nil {
-		panic(err.Error())
-	}
-	return
-}
+// func PrepareMacro() {
+// 	buf := bytes.NewBufferString(PreDefineMacro)
+// 	code, err := parser.SourceToAST(buf)
+// 	if err != nil {
+// 		panic("impossible")
+// 	}
+// 	err = tsfm.DefineTransformer.Parse(code)
+// 	if err != nil {
+// 		panic(err.Error())
+// 	}
+// 	return
+// }
 
 func parse(filename string) (code scm.Obj, err error) {
 	file, err := os.Open(filename)
@@ -89,17 +87,17 @@ func run() (err error) {
 		os.Stdout.Write([]byte("\n"))
 	}
 
-	os.Stdout.WriteString("-------transform-------\n")
-	code, err = tsfm.DefineTransformer.Transform(code)
-	if err != nil {
-		log.Error("%s", err)
-		return
-	}
-	if Trans {
-		os.Stdout.WriteString("-------compiled-------\n")
-		os.Stdout.WriteString(scm.Format(code))
-		os.Stdout.WriteString("\n")
-	}
+	// os.Stdout.WriteString("-------transform-------\n")
+	// code, err = tsfm.DefineTransformer.Transform(code)
+	// if err != nil {
+	// 	log.Error("%s", err)
+	// 	return
+	// }
+	// if Trans {
+	// 	os.Stdout.WriteString("-------compiled-------\n")
+	// 	os.Stdout.WriteString(scm.Format(code))
+	// 	os.Stdout.WriteString("\n")
+	// }
 
 	if !Run {
 		return
@@ -134,6 +132,6 @@ func main() {
 		panic(err)
 	}
 
-	PrepareMacro()
+	// PrepareMacro()
 	run()
 }

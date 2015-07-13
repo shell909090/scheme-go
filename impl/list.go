@@ -2,6 +2,10 @@ package impl
 
 import "bitbucket.org/shell909090/scheme-go/scm"
 
+func List(o *scm.Cons, f scm.Frame) (value scm.Obj, next scm.Frame, err error) {
+	return o
+}
+
 func MakeCons(o *scm.Cons, f scm.Frame) (value scm.Obj, next scm.Frame, err error) {
 	err = AssertLen(o, 2)
 	if err != nil {
@@ -70,15 +74,13 @@ func IsNull(o *scm.Cons, f scm.Frame) (value scm.Obj, next scm.Frame, err error)
 }
 
 func init() {
-	// list cons
+	scm.RegisterInternalProcedure("list", List, true)
 	scm.RegisterInternalProcedure("cons", MakeCons, true)
 	// null? pair?
 	scm.RegisterInternalProcedure("null?", IsNull, true)
 	// car cdr
 	scm.RegisterInternalProcedure("car", Car, true)
 	scm.RegisterInternalProcedure("cdr", Cdr, true)
-	// caar cadr cdar cddr
 	// append
 	// map filter reduce
-
 }

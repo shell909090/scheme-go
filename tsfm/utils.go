@@ -1,4 +1,4 @@
-package tsfm
+package main
 
 import (
 	"errors"

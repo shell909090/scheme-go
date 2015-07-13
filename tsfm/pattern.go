@@ -1,4 +1,4 @@
-package tsfm
+package main
 
 import "bitbucket.org/shell909090/scheme-go/scm"
 
