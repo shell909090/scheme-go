@@ -1,8 +1,8 @@
 package internal
 
-import "bitbucket.org/shell909090/scheme-go/scmgo"
+import "bitbucket.org/shell909090/scheme-go/scm"
 
-func MakeCons(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, err error) {
+func MakeCons(o *scm.Cons, f scm.Frame) (value scm.Obj, next scm.Frame, err error) {
 	err = AssertLen(o, 2)
 	if err != nil {
 		return
@@ -18,65 +18,65 @@ func MakeCons(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, 
 		return
 	}
 
-	value = &scmgo.Cons{Car: t1, Cdr: t2}
+	value = &scm.Cons{Car: t1, Cdr: t2}
 	return
 }
 
-func Car(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, err error) {
+func Car(o *scm.Cons, f scm.Frame) (value scm.Obj, next scm.Frame, err error) {
 	err = AssertLen(o, 1)
 	if err != nil {
 		return
 	}
 
-	t, ok := o.Car.(*scmgo.Cons)
+	t, ok := o.Car.(*scm.Cons)
 	if !ok {
-		return nil, nil, scmgo.ErrType
+		return nil, nil, scm.ErrType
 	}
 
 	value = t.Car
 	return
 }
 
-func Cdr(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, err error) {
+func Cdr(o *scm.Cons, f scm.Frame) (value scm.Obj, next scm.Frame, err error) {
 	err = AssertLen(o, 1)
 	if err != nil {
 		return
 	}
 
-	t, ok := o.Car.(*scmgo.Cons)
+	t, ok := o.Car.(*scm.Cons)
 	if !ok {
-		return nil, nil, scmgo.ErrType
+		return nil, nil, scm.ErrType
 	}
 
 	value = t.Cdr
 	return
 }
 
-func IsNull(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, err error) {
+func IsNull(o *scm.Cons, f scm.Frame) (value scm.Obj, next scm.Frame, err error) {
 	err = AssertLen(o, 1)
 	if err != nil {
 		return
 	}
 
-	t, ok := o.Car.(*scmgo.Cons)
+	t, ok := o.Car.(*scm.Cons)
 	if !ok {
-		return nil, nil, scmgo.ErrType
+		return nil, nil, scm.ErrType
 	}
 
-	if t == scmgo.Onil {
-		return scmgo.Otrue, nil, nil
+	if t == scm.Onil {
+		return scm.Otrue, nil, nil
 	}
-	return scmgo.Ofalse, nil, nil
+	return scm.Ofalse, nil, nil
 }
 
 func init() {
 	// list cons
-	scmgo.RegisterInternalProcedure("cons", MakeCons, true)
+	scm.RegisterInternalProcedure("cons", MakeCons, true)
 	// null? pair?
-	scmgo.RegisterInternalProcedure("null?", IsNull, true)
+	scm.RegisterInternalProcedure("null?", IsNull, true)
 	// car cdr
-	scmgo.RegisterInternalProcedure("car", Car, true)
-	scmgo.RegisterInternalProcedure("cdr", Cdr, true)
+	scm.RegisterInternalProcedure("car", Car, true)
+	scm.RegisterInternalProcedure("cdr", Cdr, true)
 	// caar cadr cdar cddr
 	// append
 	// map filter reduce

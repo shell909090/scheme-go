@@ -4,7 +4,7 @@ import (
 	"errors"
 	"io"
 
-	"bitbucket.org/shell909090/scheme-go/scmgo"
+	"bitbucket.org/shell909090/scheme-go/scm"
 	logging "github.com/op/go-logging"
 )
 
@@ -21,7 +21,7 @@ var (
 	log = logging.MustGetLogger("parser")
 )
 
-func SourceToAST(source io.Reader) (code scmgo.Obj, err error) {
+func SourceToAST(source io.Reader) (code scm.Obj, err error) {
 	p := CreateParser()
 	err = Grammar(source, p)
 	if err != nil {

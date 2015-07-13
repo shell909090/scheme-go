@@ -1,17 +1,17 @@
 package tsfm
 
-import "bitbucket.org/shell909090/scheme-go/scmgo"
+import "bitbucket.org/shell909090/scheme-go/scm"
 
 type Transformer struct {
 	syntaxes map[string]*Syntax
 }
 
-func (t *Transformer) Parse(obj scmgo.Obj) (err error) {
-	code, ok := obj.(*scmgo.Cons)
+func (t *Transformer) Parse(obj scm.Obj) (err error) {
+	code, ok := obj.(*scm.Cons)
 	if !ok {
-		return scmgo.ErrType
+		return scm.ErrType
 	}
-	err = code.Iter(func(o scmgo.Obj) (e error) {
+	err = code.Iter(func(o scm.Obj) (e error) {
 		s, e := DefineSyntax(o)
 		if e != nil {
 			log.Error("%s", e.Error())
@@ -30,16 +30,16 @@ func (t *Transformer) Parse(obj scmgo.Obj) (err error) {
 	return
 }
 
-func (t *Transformer) Transform(src scmgo.Obj) (code scmgo.Obj, err error) {
+func (t *Transformer) Transform(src scm.Obj) (code scm.Obj, err error) {
 	code = src
 
-	c, ok := code.(*scmgo.Cons)
+	c, ok := code.(*scm.Cons)
 	if !ok {
-		return nil, scmgo.ErrUnknown
+		return nil, scm.ErrUnknown
 	}
 
-	err = Walker(c, func(o *scmgo.Cons) (result scmgo.Obj, err error) {
-		s, ok := o.Car.(*scmgo.Symbol)
+	err = Walker(c, func(o *scm.Cons) (result scm.Obj, err error) {
+		s, ok := o.Car.(*scm.Symbol)
 		if !ok { // not a symbol is not a error.
 			return
 		}
@@ -54,7 +54,7 @@ func (t *Transformer) Transform(src scmgo.Obj) (code scmgo.Obj, err error) {
 			return
 		}
 
-		log.Info("render result: %s", scmgo.Format(result))
+		log.Info("render result: %s", scm.Format(result))
 		return
 	})
 	if err != nil {
@@ -63,12 +63,12 @@ func (t *Transformer) Transform(src scmgo.Obj) (code scmgo.Obj, err error) {
 	return
 }
 
-func Walker(o *scmgo.Cons, f func(o *scmgo.Cons) (scmgo.Obj, error)) (err error) {
+func Walker(o *scm.Cons, f func(o *scm.Cons) (scm.Obj, error)) (err error) {
 	var ok bool
-	var tmplist *scmgo.Cons
-	var tmp scmgo.Obj
-	for n := o; n != scmgo.Onil; {
-		tmplist, ok = n.Car.(*scmgo.Cons)
+	var tmplist *scm.Cons
+	var tmp scm.Obj
+	for n := o; n != scm.Onil; {
+		tmplist, ok = n.Car.(*scm.Cons)
 		if ok {
 			tmp, err = f(tmplist)
 			if err != nil {
@@ -79,7 +79,7 @@ func Walker(o *scmgo.Cons, f func(o *scmgo.Cons) (scmgo.Obj, error)) (err error)
 				n.Car = tmp
 			}
 
-			tmplist, ok = n.Car.(*scmgo.Cons)
+			tmplist, ok = n.Car.(*scm.Cons)
 			if ok {
 				err = Walker(tmplist, f)
 				if err != nil {
@@ -89,7 +89,7 @@ func Walker(o *scmgo.Cons, f func(o *scmgo.Cons) (scmgo.Obj, error)) (err error)
 			}
 		}
 
-		n, ok = n.Cdr.(*scmgo.Cons)
+		n, ok = n.Cdr.(*scm.Cons)
 		if !ok { // improper
 			return
 		}

@@ -9,7 +9,7 @@ import (
 
 	_ "bitbucket.org/shell909090/scheme-go/internal"
 	"bitbucket.org/shell909090/scheme-go/parser"
-	"bitbucket.org/shell909090/scheme-go/scmgo"
+	"bitbucket.org/shell909090/scheme-go/scm"
 	"bitbucket.org/shell909090/scheme-go/tsfm"
 	logging "github.com/op/go-logging"
 )
@@ -62,7 +62,7 @@ func PrepareMacro() {
 	return
 }
 
-func parse(filename string) (code scmgo.Obj, err error) {
+func parse(filename string) (code scm.Obj, err error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		log.Error("%s", err)
@@ -85,7 +85,7 @@ func run() (err error) {
 	}
 	if Parse {
 		os.Stdout.WriteString("-------parsed-------\n")
-		os.Stdout.WriteString(scmgo.Format(code))
+		os.Stdout.WriteString(scm.Format(code))
 		os.Stdout.Write([]byte("\n"))
 	}
 
@@ -97,7 +97,7 @@ func run() (err error) {
 	}
 	if Trans {
 		os.Stdout.WriteString("-------compiled-------\n")
-		os.Stdout.WriteString(scmgo.Format(code))
+		os.Stdout.WriteString(scm.Format(code))
 		os.Stdout.WriteString("\n")
 	}
 
@@ -105,14 +105,14 @@ func run() (err error) {
 		return
 	}
 	os.Stdout.WriteString("-------runtime-------\n")
-	result, err := scmgo.RunCode(code)
+	result, err := scm.RunCode(code)
 	if err != nil {
 		log.Error("%s", err)
 		return
 	}
 
 	os.Stdout.WriteString("-------output-------\n")
-	os.Stdout.WriteString(scmgo.Format(result))
+	os.Stdout.WriteString(scm.Format(result))
 	os.Stdout.WriteString("\n")
 	return
 }

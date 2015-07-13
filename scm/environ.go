@@ -1,4 +1,4 @@
-package scmgo
+package scm
 
 type Environ struct {
 	Parent *Environ

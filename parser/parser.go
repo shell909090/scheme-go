@@ -4,37 +4,37 @@ import (
 	"strconv"
 	"strings"
 
-	"bitbucket.org/shell909090/scheme-go/scmgo"
+	"bitbucket.org/shell909090/scheme-go/scm"
 )
 
-func StringToBoolean(b []byte) (o scmgo.Boolean, err error) {
+func StringToBoolean(b []byte) (o scm.Boolean, err error) {
 	if len(b) != 2 || b[0] != '#' {
-		return scmgo.Ofalse, ErrBooleanUnknown
+		return scm.Ofalse, ErrBooleanUnknown
 	}
 	switch b[1] {
 	case 't':
-		return scmgo.Otrue, nil
+		return scm.Otrue, nil
 	case 'f':
-		return scmgo.Ofalse, nil
+		return scm.Ofalse, nil
 	}
-	return scmgo.Ofalse, ErrBooleanUnknown
+	return scm.Ofalse, ErrBooleanUnknown
 }
 
-func StringToNumber(b []byte) (obj scmgo.Obj, err error) {
+func StringToNumber(b []byte) (obj scm.Obj, err error) {
 	chunk := string(b)
 	if strings.Index(chunk, ".") != -1 {
 		var i float64
 		i, err = strconv.ParseFloat(chunk, 64)
-		obj = scmgo.Float(i)
+		obj = scm.Float(i)
 	} else {
 		var i int
 		i, err = strconv.Atoi(chunk)
-		obj = scmgo.Integer(i)
+		obj = scm.Integer(i)
 	}
 	return
 }
 
-func convertDotPair(list *scmgo.Cons) (result *scmgo.Cons) {
+func convertDotPair(list *scm.Cons) (result *scm.Cons) {
 	f, c, err := list.Pop()
 	if err != nil {
 		return list
@@ -44,7 +44,7 @@ func convertDotPair(list *scmgo.Cons) (result *scmgo.Cons) {
 	if err != nil {
 		return list
 	}
-	if sym, ok := s.(*scmgo.Symbol); !ok || sym.Name != "." {
+	if sym, ok := s.(*scm.Symbol); !ok || sym.Name != "." {
 		return list
 	} // secondary element not dot
 
@@ -53,29 +53,29 @@ func convertDotPair(list *scmgo.Cons) (result *scmgo.Cons) {
 		return list
 	}
 
-	if c != scmgo.Onil {
+	if c != scm.Onil {
 		return list
 	} // list not end
-	return &scmgo.Cons{Car: f, Cdr: t} // all matched
+	return &scm.Cons{Car: f, Cdr: t} // all matched
 }
 
 type Parser struct {
-	list  *scmgo.Cons
-	stack *scmgo.Cons
+	list  *scm.Cons
+	stack *scm.Cons
 }
 
 func CreateParser() (p *Parser) {
-	return &Parser{list: scmgo.Onil, stack: scmgo.Onil}
+	return &Parser{list: scm.Onil, stack: scm.Onil}
 }
 
-func (p *Parser) listToObj() (obj scmgo.Obj, err error) {
+func (p *Parser) listToObj() (obj scm.Obj, err error) {
 	if p.list.Car != nil {
-		last, ok := p.list.Car.(*scmgo.Quote)
+		last, ok := p.list.Car.(*scm.Quote)
 		if ok && last.Objs == nil {
 			return nil, ErrQuoteInEnd
 		}
 	}
-	p.list, err = scmgo.ReverseList(p.list, scmgo.Onil)
+	p.list, err = scm.ReverseList(p.list, scm.Onil)
 	if err != nil {
 		log.Error("%s", err)
 		return
@@ -93,25 +93,25 @@ func (p *Parser) Write(chunk []byte) (n int, err error) {
 	// }
 
 	// func (p *Parser) ReceiveChunk(chunk string) (err error) {
-	var obj scmgo.Obj
+	var obj scm.Obj
 
 	switch chunk[0] {
 	case '#': // Boolean
 		obj, err = StringToBoolean(chunk)
 	case '"': // String
-		obj = scmgo.String(string(chunk[1 : len(chunk)-1]))
+		obj = scm.String(string(chunk[1 : len(chunk)-1]))
 	case '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
 		if chunk[0] == '-' && len(chunk) == 1 {
 			// - without number is symbol
-			obj = &scmgo.Symbol{Name: string(chunk)}
+			obj = &scm.Symbol{Name: string(chunk)}
 		} else { // Integer & Float
 			obj, err = StringToNumber(chunk)
 		}
 	case '\'': // Quote
-		obj = new(scmgo.Quote)
+		obj = new(scm.Quote)
 	case '(': // Cons
 		p.stack = p.stack.Push(p.list)
-		p.list = scmgo.Onil
+		p.list = scm.Onil
 		return
 	case ')': // return Cons
 		obj, err = p.listToObj()
@@ -121,7 +121,7 @@ func (p *Parser) Write(chunk []byte) (n int, err error) {
 		}
 		p.list, p.stack, err = p.stack.PopCons()
 	default: // Symbol
-		obj = &scmgo.Symbol{Name: string(chunk)}
+		obj = &scm.Symbol{Name: string(chunk)}
 	}
 
 	if err != nil {
@@ -131,7 +131,7 @@ func (p *Parser) Write(chunk []byte) (n int, err error) {
 
 	// processing Quote
 	if p.list.Car != nil {
-		if last, ok := p.list.Car.(*scmgo.Quote); ok {
+		if last, ok := p.list.Car.(*scm.Quote); ok {
 			last.Objs = obj
 			return
 		}
@@ -141,8 +141,8 @@ func (p *Parser) Write(chunk []byte) (n int, err error) {
 	return
 }
 
-func (p *Parser) GetCode() (code scmgo.Obj, err error) {
-	if p.stack != scmgo.Onil {
+func (p *Parser) GetCode() (code scm.Obj, err error) {
+	if p.stack != scm.Onil {
 		return nil, ErrParenthesisNotClose
 	}
 	return p.listToObj()

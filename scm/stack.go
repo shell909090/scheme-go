@@ -1,4 +1,4 @@
-package scmgo
+package scm
 
 type Frame interface {
 	GetParent() (p Frame)

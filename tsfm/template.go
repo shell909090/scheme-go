@@ -1,11 +1,11 @@
 package tsfm
 
-import "bitbucket.org/shell909090/scheme-go/scmgo"
+import "bitbucket.org/shell909090/scheme-go/scm"
 
-func RenderList(mr *MatchResult, template *scmgo.Cons) (result scmgo.Obj, err error) {
+func RenderList(mr *MatchResult, template *scm.Cons) (result scm.Obj, err error) {
 	var ok bool
-	var obj scmgo.Obj
-	c := &scmgo.Cons{}
+	var obj scm.Obj
+	c := &scm.Cons{}
 	result = c
 
 	for {
@@ -16,12 +16,12 @@ func RenderList(mr *MatchResult, template *scmgo.Cons) (result scmgo.Obj, err er
 		}
 		c.Car = obj
 
-		if template.Cdr == scmgo.Onil {
-			c.Cdr = scmgo.Onil
+		if template.Cdr == scm.Onil {
+			c.Cdr = scm.Onil
 			return
 		}
 
-		template, ok = template.Cdr.(*scmgo.Cons)
+		template, ok = template.Cdr.(*scm.Cons)
 		if !ok { // improper
 			obj, err = Render(mr, template.Cdr)
 			if err != nil {
@@ -33,7 +33,7 @@ func RenderList(mr *MatchResult, template *scmgo.Cons) (result scmgo.Obj, err er
 		}
 
 		if isEllipsis(template) {
-			obj, ok = mr.m[template.Car.(*scmgo.Symbol).Name]
+			obj, ok = mr.m[template.Car.(*scm.Symbol).Name]
 			if !ok {
 				return nil, ErrElpsAfterNoVar
 			}
@@ -41,21 +41,21 @@ func RenderList(mr *MatchResult, template *scmgo.Cons) (result scmgo.Obj, err er
 			return
 		}
 
-		c.Cdr = &scmgo.Cons{}
-		c = c.Cdr.(*scmgo.Cons)
+		c.Cdr = &scm.Cons{}
+		c = c.Cdr.(*scm.Cons)
 	}
 	return
 }
 
-func Render(mr *MatchResult, template scmgo.Obj) (result scmgo.Obj, err error) {
+func Render(mr *MatchResult, template scm.Obj) (result scm.Obj, err error) {
 	var ok bool
 	switch tmp := template.(type) {
-	case *scmgo.Symbol:
+	case *scm.Symbol:
 		result, ok = mr.m[tmp.Name]
 		if ok {
 			return
 		}
-	case *scmgo.Cons:
+	case *scm.Cons:
 		return RenderList(mr, tmp)
 	}
 	return template, nil

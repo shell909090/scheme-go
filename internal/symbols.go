@@ -3,10 +3,10 @@ package internal
 import (
 	"fmt"
 
-	"bitbucket.org/shell909090/scheme-go/scmgo"
+	"bitbucket.org/shell909090/scheme-go/scm"
 )
 
-func Define(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, err error) {
+func Define(o *scm.Cons, f scm.Frame) (value scm.Obj, next scm.Frame, err error) {
 	args, o, err := o.PopCons()
 	if err != nil {
 		log.Error("%s", err.Error())
@@ -19,7 +19,7 @@ func Define(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, er
 		return
 	}
 
-	value = &scmgo.LambdaProcedure{
+	value = &scm.LambdaProcedure{
 		Name: name.Name,
 		Env:  f.GetEnv(),
 		Args: args,
@@ -30,14 +30,14 @@ func Define(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, er
 	return
 }
 
-func Lambda(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, err error) {
+func Lambda(o *scm.Cons, f scm.Frame) (value scm.Obj, next scm.Frame, err error) {
 	args, o, err := o.PopCons()
 	if err != nil {
 		log.Error("%s", err.Error())
 		return
 	}
 
-	value = &scmgo.LambdaProcedure{
+	value = &scm.LambdaProcedure{
 		Env:  f.GetEnv(),
 		Args: args,
 		Obj:  o,
@@ -45,7 +45,7 @@ func Lambda(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, er
 	return
 }
 
-func If(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, err error) {
+func If(o *scm.Cons, f scm.Frame) (value scm.Obj, next scm.Frame, err error) {
 	cond, o, err := o.Pop()
 	if err != nil {
 		log.Error("%s", err.Error())
@@ -56,38 +56,38 @@ func If(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, err er
 		log.Error("%s", err.Error())
 		return
 	}
-	var ecase scmgo.Obj = scmgo.Onil
-	if o != scmgo.Onil {
+	var ecase scm.Obj = scm.Onil
+	if o != scm.Onil {
 		ecase, o, err = o.Pop()
 		if err != nil {
 			log.Error("%s", err.Error())
 			return
 		}
 	}
-	next = scmgo.CreateIfFrame(cond, tcase, ecase, f.GetEnv(), f.GetParent())
+	next = scm.CreateIfFrame(cond, tcase, ecase, f.GetEnv(), f.GetParent())
 	return
 }
 
-func Display(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, err error) {
+func Display(o *scm.Cons, f scm.Frame) (value scm.Obj, next scm.Frame, err error) {
 	err = AssertLen(o, 1)
 	if err != nil {
 		return
 	}
 
-	fmt.Printf("%s", scmgo.Format(o.Car))
-	return scmgo.Onil, nil, nil
+	fmt.Printf("%s", scm.Format(o.Car))
+	return scm.Onil, nil, nil
 }
 
-func Newline(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, err error) {
+func Newline(o *scm.Cons, f scm.Frame) (value scm.Obj, next scm.Frame, err error) {
 	fmt.Printf("\n")
-	return scmgo.Onil, nil, nil
+	return scm.Onil, nil, nil
 }
 
 func init() {
 	// symbol? string?
 
-	scmgo.RegisterInternalProcedure("define", Define, false)
-	scmgo.RegisterInternalProcedure("lambda", Lambda, false)
+	scm.RegisterInternalProcedure("define", Define, false)
+	scm.RegisterInternalProcedure("lambda", Lambda, false)
 	// begin compile
 	// eval apply
 
@@ -99,9 +99,9 @@ func init() {
 	// eq? equal?
 	// not and or
 	// cond if when
-	scmgo.RegisterInternalProcedure("if", If, false)
+	scm.RegisterInternalProcedure("if", If, false)
 
-	scmgo.RegisterInternalProcedure("display", Display, true)
-	scmgo.RegisterInternalProcedure("newline", Newline, true)
+	scm.RegisterInternalProcedure("display", Display, true)
+	scm.RegisterInternalProcedure("newline", Newline, true)
 	// exit
 }

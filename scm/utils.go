@@ -1,4 +1,4 @@
-package scmgo
+package scm
 
 import (
 	"errors"
@@ -16,7 +16,7 @@ var (
 )
 
 var (
-	log                   = logging.MustGetLogger("scmgo")
+	log                   = logging.MustGetLogger("scm")
 	DefaultNames          = make(map[string]Obj)
 	DefaultEnv   *Environ = &Environ{Parent: nil, Names: DefaultNames}
 )

@@ -3,7 +3,7 @@ package internal
 import (
 	"errors"
 
-	"bitbucket.org/shell909090/scheme-go/scmgo"
+	"bitbucket.org/shell909090/scheme-go/scm"
 	logging "github.com/op/go-logging"
 )
 
@@ -16,7 +16,7 @@ var (
 	log = logging.MustGetLogger("internal")
 )
 
-func AssertLen(o *scmgo.Cons, length int) (err error) {
+func AssertLen(o *scm.Cons, length int) (err error) {
 	n, err := o.Len(false)
 	if err != nil {
 		return
@@ -27,20 +27,20 @@ func AssertLen(o *scmgo.Cons, length int) (err error) {
 	return
 }
 
-func ParseParameters(list *scmgo.Cons, v ...interface{}) (next *scmgo.Cons, err error) {
+func ParseParameters(list *scm.Cons, v ...interface{}) (next *scm.Cons, err error) {
 	for _, a := range v {
 		switch arg := a.(type) {
 		case *string:
 			switch first := list.Car.(type) {
-			case *scmgo.Symbol:
+			case *scm.Symbol:
 				*arg = first.Name
-			case *scmgo.String:
+			case *scm.String:
 				*arg = string(*first)
 			default:
 				return nil, ErrArguments
 			}
-		case **scmgo.Cons:
-			first, ok := list.Car.(*scmgo.Cons)
+		case **scm.Cons:
+			first, ok := list.Car.(*scm.Cons)
 			if !ok {
 				return nil, ErrArguments
 			}

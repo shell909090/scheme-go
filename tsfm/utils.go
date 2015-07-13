@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"bitbucket.org/shell909090/scheme-go/scmgo"
+	"bitbucket.org/shell909090/scheme-go/scm"
 	logging "github.com/op/go-logging"
 )
 
@@ -25,10 +25,10 @@ var (
 
 type Literals map[string]int
 
-func ReadLiterals(l *scmgo.Cons) (literals Literals, err error) {
-	var s *scmgo.Symbol
+func ReadLiterals(l *scm.Cons) (literals Literals, err error) {
+	var s *scm.Symbol
 	literals = make(Literals, 0)
-	for l != scmgo.Onil {
+	for l != scm.Onil {
 		s, l, err = l.PopSymbol()
 		if err != nil {
 			return
@@ -44,30 +44,30 @@ func (l Literals) CheckLiteral(s string) (yes bool) {
 }
 
 type MatchResult struct {
-	m map[string]scmgo.Obj
+	m map[string]scm.Obj
 }
 
 func CreateMatchResult() (m *MatchResult) {
 	m = &MatchResult{
-		m: make(map[string]scmgo.Obj),
+		m: make(map[string]scm.Obj),
 	}
 	return
 }
 
-func (m *MatchResult) Add(name string, value scmgo.Obj) {
+func (m *MatchResult) Add(name string, value scm.Obj) {
 	m.m[name] = value
 }
 
 func (m *MatchResult) Format() (r string) {
 	var strs []string
 	for name, value := range m.m {
-		strs = append(strs, fmt.Sprintf("%s = %s", name, scmgo.Format(value)))
+		strs = append(strs, fmt.Sprintf("%s = %s", name, scm.Format(value)))
 	}
 	return strings.Join(strs, "\n")
 }
 
-func isEllipsis(plist *scmgo.Cons) (yes bool) {
-	_, ok := plist.Car.(*scmgo.Symbol)
+func isEllipsis(plist *scm.Cons) (yes bool) {
+	_, ok := plist.Car.(*scm.Symbol)
 	if !ok {
 		return false
 	}
@@ -75,7 +75,7 @@ func isEllipsis(plist *scmgo.Cons) (yes bool) {
 	if err != nil {
 		return false
 	}
-	next_sym, ok := next.(*scmgo.Symbol)
+	next_sym, ok := next.(*scm.Symbol)
 	if !ok {
 		return false
 	}

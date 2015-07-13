@@ -1,16 +1,16 @@
 package internal
 
-import "bitbucket.org/shell909090/scheme-go/scmgo"
+import "bitbucket.org/shell909090/scheme-go/scm"
 
-func anyFloat(i *scmgo.Cons) (yes bool, err error) {
-	err = i.Iter(func(obj scmgo.Obj) (e error) {
+func anyFloat(i *scm.Cons) (yes bool, err error) {
+	err = i.Iter(func(obj scm.Obj) (e error) {
 		switch obj.(type) {
-		case scmgo.Float:
+		case scm.Float:
 			yes = true
 			e = ErrQuit
-		case scmgo.Integer:
+		case scm.Integer:
 		default:
-			e = scmgo.ErrType
+			e = scm.ErrType
 		}
 		return
 	}, false)
@@ -20,43 +20,43 @@ func anyFloat(i *scmgo.Cons) (yes bool, err error) {
 	return
 }
 
-func ObjToFloat(i scmgo.Obj) (f float64) {
+func ObjToFloat(i scm.Obj) (f float64) {
 	switch n := i.(type) {
-	case scmgo.Integer:
+	case scm.Integer:
 		return float64(int(n))
-	case scmgo.Float:
+	case scm.Float:
 		return float64(n)
 	}
 	return
 }
 
-func IsNumber(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, err error) {
+func IsNumber(o *scm.Cons, f scm.Frame) (value scm.Obj, next scm.Frame, err error) {
 	err = AssertLen(o, 1)
 	if err != nil {
 		return
 	}
 
 	switch o.Car.(type) {
-	case scmgo.Integer, scmgo.Float:
-		return scmgo.Otrue, nil, nil
+	case scm.Integer, scm.Float:
+		return scm.Otrue, nil, nil
 	}
-	return scmgo.Ofalse, nil, nil
+	return scm.Ofalse, nil, nil
 }
 
-func IsInteger(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, err error) {
+func IsInteger(o *scm.Cons, f scm.Frame) (value scm.Obj, next scm.Frame, err error) {
 	err = AssertLen(o, 1)
 	if err != nil {
 		return
 	}
 
 	switch o.Car.(type) {
-	case scmgo.Integer:
-		return scmgo.Otrue, nil, nil
+	case scm.Integer:
+		return scm.Otrue, nil, nil
 	}
-	return scmgo.Ofalse, nil, nil
+	return scm.Ofalse, nil, nil
 }
 
-func Add(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, err error) {
+func Add(o *scm.Cons, f scm.Frame) (value scm.Obj, next scm.Frame, err error) {
 	any, err := anyFloat(o)
 	if err != nil {
 		return
@@ -64,30 +64,30 @@ func Add(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, err e
 
 	if any {
 		var s float64
-		err = o.Iter(func(obj scmgo.Obj) (e error) {
+		err = o.Iter(func(obj scm.Obj) (e error) {
 			s += ObjToFloat(obj)
 			return
 		}, false)
 		if err != nil {
 			return
 		}
-		value = scmgo.Float(s)
+		value = scm.Float(s)
 	} else {
 		var s int
-		err = o.Iter(func(obj scmgo.Obj) (e error) {
-			s += int(obj.(scmgo.Integer))
+		err = o.Iter(func(obj scm.Obj) (e error) {
+			s += int(obj.(scm.Integer))
 			return
 		}, false)
 		if err != nil {
 			return
 		}
-		value = scmgo.Integer(s)
+		value = scm.Integer(s)
 	}
 	return
 }
 
-func Dec(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, err error) {
-	var t scmgo.Obj
+func Dec(o *scm.Cons, f scm.Frame) (value scm.Obj, next scm.Frame, err error) {
+	var t scm.Obj
 	any, err := anyFloat(o)
 	if err != nil {
 		return
@@ -100,36 +100,36 @@ func Dec(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, err e
 		}
 		s := ObjToFloat(t)
 
-		err = o.Iter(func(obj scmgo.Obj) (e error) {
+		err = o.Iter(func(obj scm.Obj) (e error) {
 			s -= ObjToFloat(obj)
 			return
 		}, false)
 		if err != nil {
 			return
 		}
-		value = scmgo.Float(s)
+		value = scm.Float(s)
 	} else {
 		t, o, err = o.Pop()
 		if err != nil {
 			return
 		}
-		s := int(t.(scmgo.Integer))
+		s := int(t.(scm.Integer))
 
-		err = o.Iter(func(obj scmgo.Obj) (e error) {
-			s -= int(obj.(scmgo.Integer))
+		err = o.Iter(func(obj scm.Obj) (e error) {
+			s -= int(obj.(scm.Integer))
 			return
 		}, false)
 		if err != nil {
 			return
 		}
-		value = scmgo.Integer(s)
+		value = scm.Integer(s)
 	}
 
 	return
 }
 
-func Mul(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, err error) {
-	var t scmgo.Obj
+func Mul(o *scm.Cons, f scm.Frame) (value scm.Obj, next scm.Frame, err error) {
+	var t scm.Obj
 	any, err := anyFloat(o)
 	if err != nil {
 		return
@@ -142,61 +142,61 @@ func Mul(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, err e
 		}
 		s := ObjToFloat(t)
 
-		err = o.Iter(func(obj scmgo.Obj) (e error) {
+		err = o.Iter(func(obj scm.Obj) (e error) {
 			s *= ObjToFloat(obj)
 			return
 		}, false)
 		if err != nil {
 			return
 		}
-		value = scmgo.Float(s)
+		value = scm.Float(s)
 	} else {
 		t, o, err = o.Pop()
 		if err != nil {
 			return
 		}
-		s := int(t.(scmgo.Integer))
+		s := int(t.(scm.Integer))
 
-		err = o.Iter(func(obj scmgo.Obj) (e error) {
-			s *= int(obj.(scmgo.Integer))
+		err = o.Iter(func(obj scm.Obj) (e error) {
+			s *= int(obj.(scm.Integer))
 			return
 		}, false)
 		if err != nil {
 			return
 		}
-		value = scmgo.Integer(s)
+		value = scm.Integer(s)
 	}
 	return
 }
 
-func Div(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, err error) {
-	var t scmgo.Obj
+func Div(o *scm.Cons, f scm.Frame) (value scm.Obj, next scm.Frame, err error) {
+	var t scm.Obj
 	t, o, err = o.Pop()
 	if err != nil {
 		return
 	}
 	s := ObjToFloat(t)
 
-	err = o.Iter(func(obj scmgo.Obj) (e error) {
+	err = o.Iter(func(obj scm.Obj) (e error) {
 		s /= ObjToFloat(obj)
 		return
 	}, false)
 	if err != nil {
 		return
 	}
-	value = scmgo.Float(s)
+	value = scm.Float(s)
 	return
 }
 
 func init() {
-	scmgo.RegisterInternalProcedure("number?", IsNumber, true)
-	scmgo.RegisterInternalProcedure("integer?", IsInteger, true)
+	scm.RegisterInternalProcedure("number?", IsNumber, true)
+	scm.RegisterInternalProcedure("integer?", IsInteger, true)
 	// zero? positive? negative?
 
-	scmgo.RegisterInternalProcedure("+", Add, true)
-	scmgo.RegisterInternalProcedure("-", Dec, true)
-	scmgo.RegisterInternalProcedure("*", Mul, true)
-	scmgo.RegisterInternalProcedure("/", Div, true)
+	scm.RegisterInternalProcedure("+", Add, true)
+	scm.RegisterInternalProcedure("-", Dec, true)
+	scm.RegisterInternalProcedure("*", Mul, true)
+	scm.RegisterInternalProcedure("/", Div, true)
 
 	// = != < > >= <=
 	// remainder
