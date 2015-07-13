@@ -1,7 +1,6 @@
 package scm
 
 type Procedure interface {
-	Obj
 	IsApplicativeOrder() bool
 	Apply(args *Cons, f Frame) (value Obj, next Frame, err error)
 }
@@ -88,7 +87,6 @@ func (p *LambdaProcedure) Apply(args *Cons, f Frame) (value Obj, next Frame, err
 		return
 	}
 	log.Info("lambda %s", Format(p))
-	next = CreateBeginFrame(
-		p.Obj, env, f.GetParent()) // coming from apply, so pass this frame.
+	next = CreateBeginFrame(p.Obj, env, f.GetParent()) // coming from apply, so pass this frame.
 	return
 }

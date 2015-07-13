@@ -121,3 +121,20 @@ func (o *Cons) PopCons() (s *Cons, next *Cons, err error) {
 	}
 	return
 } // O(1)
+
+func (o *Cons) Reverse(tail Obj) (result *Cons, err error) {
+	// image a list from left to right.
+	var ok bool
+	left := tail
+	right := o
+	for right != Onil {
+		next := right.Cdr        // record the next one of the left.
+		right.Cdr = left         // turn right back.
+		left = right             // push left forward.
+		right, ok = next.(*Cons) // and push right forward, if can.
+		if !ok {                 // improper
+			return nil, ErrISNotAList
+		}
+	}
+	return left.(*Cons), nil
+}

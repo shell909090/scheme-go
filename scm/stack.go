@@ -22,7 +22,6 @@ func (f *BaseFrame) GetEnv() (e *Environ) {
 
 type EndFrame struct {
 	result Obj
-	Env    *Environ
 }
 
 func (f *EndFrame) GetParent() (p Frame) {
@@ -30,7 +29,7 @@ func (f *EndFrame) GetParent() (p Frame) {
 }
 
 func (f *EndFrame) GetEnv() (e *Environ) {
-	return f.Env
+	return nil
 }
 
 func (f *EndFrame) Return(i Obj) (err error) {
@@ -58,9 +57,9 @@ func (f *BeginFrame) Return(i Obj) (err error) {
 func (f *BeginFrame) Exec() (next Frame, err error) {
 	var obj Obj
 	switch {
-	case f.Obj == Onil: // FIXME: not make sense
-		return f.Parent, nil
-	case f.Obj.Cdr == Onil: // jump
+	case f.Obj == Onil:
+		panic("not make sense")
+	case f.Obj.Cdr == Onil: // tail call optimization
 		return EvalAndReturn(f.Obj.Car, f.Env, f.Parent)
 	default: // eval
 		obj, f.Obj, err = f.Obj.Pop()
@@ -138,7 +137,7 @@ func (f *ApplyFrame) Exec() (next Frame, err error) {
 	}
 
 	// all args has been evaled
-	f.EvaledArgs, err = ReverseList(f.EvaledArgs, Onil)
+	f.EvaledArgs, err = f.EvaledArgs.Reverse(Onil)
 	if err != nil {
 		return
 	}

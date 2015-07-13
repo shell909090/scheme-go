@@ -75,7 +75,7 @@ func (p *Parser) listToObj() (obj scm.Obj, err error) {
 			return nil, ErrQuoteInEnd
 		}
 	}
-	p.list, err = scm.ReverseList(p.list, scm.Onil)
+	p.list, err = p.list.Reverse(scm.Onil)
 	if err != nil {
 		log.Error("%s", err)
 		return
@@ -84,16 +84,8 @@ func (p *Parser) listToObj() (obj scm.Obj, err error) {
 }
 
 func (p *Parser) Write(chunk []byte) (n int, err error) {
-	n = len(chunk)
-	// err = p.ReceiveChunk(string(b))
-	// if err != nil {
-	// 	return
-	// }
-	// return
-	// }
-
-	// func (p *Parser) ReceiveChunk(chunk string) (err error) {
 	var obj scm.Obj
+	n = len(chunk)
 
 	switch chunk[0] {
 	case '#': // Boolean

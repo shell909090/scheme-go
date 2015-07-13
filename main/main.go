@@ -14,7 +14,7 @@ import (
 	logging "github.com/op/go-logging"
 )
 
-var log = logging.MustGetLogger("")
+var log = logging.MustGetLogger("main")
 
 var (
 	LogFile  string
@@ -105,7 +105,7 @@ func run() (err error) {
 		return
 	}
 	os.Stdout.WriteString("-------runtime-------\n")
-	result, err := scm.RunCode(code)
+	result, _, err := scm.RunCode(code)
 	if err != nil {
 		log.Error("%s", err)
 		return

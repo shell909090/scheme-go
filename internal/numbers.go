@@ -7,14 +7,14 @@ func anyFloat(i *scm.Cons) (yes bool, err error) {
 		switch obj.(type) {
 		case scm.Float:
 			yes = true
-			e = ErrQuit
+			e = scm.ErrQuit
 		case scm.Integer:
 		default:
 			e = scm.ErrType
 		}
 		return
 	}, false)
-	if err == ErrQuit {
+	if err == scm.ErrQuit {
 		err = nil
 	}
 	return

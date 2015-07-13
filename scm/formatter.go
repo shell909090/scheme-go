@@ -23,20 +23,15 @@ func fullSpace(s io.Writer, iv int) {
 }
 
 func AnyList(o *Cons) (yes bool) {
-	ok := true
-	for i := o; i != Onil; {
-		if _, yes = i.Car.(*Cons); yes {
-			return true
+	return o.Iter(func(obj Obj) (e error) {
+		if _, yes = obj.(*Cons); yes {
+			return ErrQuit
 		}
-		i, ok = i.Cdr.(*Cons)
-		if !ok {
-			return false
-		}
-	}
-	return false
+		return
+	}, false) == ErrQuit
 }
 
-func formatOneLineList(list *Cons) (r string) {
+func fmtOneLine(list *Cons) (r string) {
 	strs := make([]string, 0)
 	for c := list; c != Onil; {
 		strs = append(strs, Format(c.Car))
@@ -51,7 +46,7 @@ func formatOneLineList(list *Cons) (r string) {
 	return "(" + strings.Join(strs, " ") + ")"
 }
 
-func formatMultiLineList(s io.Writer, list *Cons, iv int) (rv int, err error) {
+func fmtMultiLine(s io.Writer, list *Cons, iv int) (rv int, err error) {
 	// iv for Input leVel, rv for Return leVel.
 	obj := list
 	s.Write([]byte("("))
@@ -107,11 +102,11 @@ func PrettyFormat(s io.Writer, o Obj, iv int) (rv int, err error) {
 	}
 
 	if AnyList(c) {
-		return formatMultiLineList(s, c, iv)
+		return fmtMultiLine(s, c, iv)
 	}
 
 	// all element in one line
-	str = formatOneLineList(c)
+	str = fmtOneLine(c)
 	s.Write([]byte(str))
 	return iv + len(str), err
 }
@@ -154,15 +149,14 @@ func Format(o Obj) (r string) {
 }
 
 func EnvFormat(e *Environ) (r string) {
-	str := make([]string, 0)
+	buf := bytes.NewBuffer(nil)
 	for ce := e; ce != nil; ce = ce.Parent {
-		strname := make([]string, 0)
 		for k, _ := range ce.Names {
-			strname = append(strname, k)
+			buf.WriteString(k + " ")
 		}
-		str = append(str, strings.Join(strname, " "))
+		buf.Write([]byte{'\n'})
 	}
-	return strings.Join(str, "\n")
+	return buf.String()
 }
 
 func StackFormat(f Frame) (r string) {

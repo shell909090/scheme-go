@@ -8,7 +8,6 @@ import (
 )
 
 var (
-	ErrQuit      = errors.New("quit")
 	ErrArguments = errors.New("wrong arguments")
 )
 
