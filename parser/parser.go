@@ -135,6 +135,7 @@ func (p *Parser) Write(chunk []byte) (n int, err error) {
 
 func (p *Parser) GetCode() (code scm.Obj, err error) {
 	if p.stack != scm.Onil {
+		log.Error("%s", scm.Format(p.stack))
 		return nil, ErrParenthesisNotClose
 	}
 	return p.listToObj()

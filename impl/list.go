@@ -3,7 +3,7 @@ package impl
 import "bitbucket.org/shell909090/scheme-go/scm"
 
 func List(o *scm.Cons, f scm.Frame) (value scm.Obj, next scm.Frame, err error) {
-	return o
+	return o, nil, nil
 }
 
 func MakeCons(o *scm.Cons, f scm.Frame) (value scm.Obj, next scm.Frame, err error) {
