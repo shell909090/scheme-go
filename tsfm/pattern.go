@@ -40,7 +40,7 @@ func MatchList(plist, olist *scmgo.Cons, literals Literals, mr *MatchResult) (ye
 	return olist == scmgo.Onil && plist == scmgo.Onil, nil
 }
 
-func Match(pattern, obj scmgo.SchemeObject, literals Literals, mr *MatchResult) (yes bool, err error) {
+func Match(pattern, obj scmgo.Obj, literals Literals, mr *MatchResult) (yes bool, err error) {
 	switch tmp := pattern.(type) {
 	case *scmgo.Symbol:
 		switch {

@@ -2,7 +2,7 @@ package internal
 
 import "bitbucket.org/shell909090/scheme-go/scmgo"
 
-func MakeCons(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
+func MakeCons(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, err error) {
 	err = AssertLen(o, 2)
 	if err != nil {
 		return
@@ -22,7 +22,7 @@ func MakeCons(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmg
 	return
 }
 
-func Car(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
+func Car(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, err error) {
 	err = AssertLen(o, 1)
 	if err != nil {
 		return
@@ -37,7 +37,7 @@ func Car(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Fra
 	return
 }
 
-func Cdr(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
+func Cdr(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, err error) {
 	err = AssertLen(o, 1)
 	if err != nil {
 		return
@@ -52,7 +52,7 @@ func Cdr(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Fra
 	return
 }
 
-func IsNull(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
+func IsNull(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, err error) {
 	err = AssertLen(o, 1)
 	if err != nil {
 		return

@@ -6,7 +6,7 @@ import (
 	"bitbucket.org/shell909090/scheme-go/scmgo"
 )
 
-func Define(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
+func Define(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, err error) {
 	args, o, err := o.PopCons()
 	if err != nil {
 		log.Error("%s", err.Error())
@@ -30,7 +30,7 @@ func Define(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.
 	return
 }
 
-func Lambda(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
+func Lambda(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, err error) {
 	args, o, err := o.PopCons()
 	if err != nil {
 		log.Error("%s", err.Error())
@@ -45,7 +45,7 @@ func Lambda(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.
 	return
 }
 
-func If(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
+func If(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, err error) {
 	cond, o, err := o.Pop()
 	if err != nil {
 		log.Error("%s", err.Error())
@@ -56,7 +56,7 @@ func If(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Fram
 		log.Error("%s", err.Error())
 		return
 	}
-	var ecase scmgo.SchemeObject = scmgo.Onil
+	var ecase scmgo.Obj = scmgo.Onil
 	if o != scmgo.Onil {
 		ecase, o, err = o.Pop()
 		if err != nil {
@@ -68,7 +68,7 @@ func If(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Fram
 	return
 }
 
-func Display(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
+func Display(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, err error) {
 	err = AssertLen(o, 1)
 	if err != nil {
 		return
@@ -78,7 +78,7 @@ func Display(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo
 	return scmgo.Onil, nil, nil
 }
 
-func Newline(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
+func Newline(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, err error) {
 	fmt.Printf("\n")
 	return scmgo.Onil, nil, nil
 }

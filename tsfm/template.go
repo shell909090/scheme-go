@@ -2,9 +2,9 @@ package tsfm
 
 import "bitbucket.org/shell909090/scheme-go/scmgo"
 
-func RenderList(mr *MatchResult, template *scmgo.Cons) (result scmgo.SchemeObject, err error) {
+func RenderList(mr *MatchResult, template *scmgo.Cons) (result scmgo.Obj, err error) {
 	var ok bool
-	var obj scmgo.SchemeObject
+	var obj scmgo.Obj
 	c := &scmgo.Cons{}
 	result = c
 
@@ -47,7 +47,7 @@ func RenderList(mr *MatchResult, template *scmgo.Cons) (result scmgo.SchemeObjec
 	return
 }
 
-func Render(mr *MatchResult, template scmgo.SchemeObject) (result scmgo.SchemeObject, err error) {
+func Render(mr *MatchResult, template scmgo.Obj) (result scmgo.Obj, err error) {
 	var ok bool
 	switch tmp := template.(type) {
 	case *scmgo.Symbol:

@@ -20,7 +20,7 @@ func StringToBoolean(b []byte) (o scmgo.Boolean, err error) {
 	return scmgo.Ofalse, ErrBooleanUnknown
 }
 
-func StringToNumber(b []byte) (obj scmgo.SchemeObject, err error) {
+func StringToNumber(b []byte) (obj scmgo.Obj, err error) {
 	chunk := string(b)
 	if strings.Index(chunk, ".") != -1 {
 		var i float64
@@ -68,7 +68,7 @@ func CreateParser() (p *Parser) {
 	return &Parser{list: scmgo.Onil, stack: scmgo.Onil}
 }
 
-func (p *Parser) listToObj() (obj scmgo.SchemeObject, err error) {
+func (p *Parser) listToObj() (obj scmgo.Obj, err error) {
 	if p.list.Car != nil {
 		last, ok := p.list.Car.(*scmgo.Quote)
 		if ok && last.Objs == nil {
@@ -93,7 +93,7 @@ func (p *Parser) Write(chunk []byte) (n int, err error) {
 	// }
 
 	// func (p *Parser) ReceiveChunk(chunk string) (err error) {
-	var obj scmgo.SchemeObject
+	var obj scmgo.Obj
 
 	switch chunk[0] {
 	case '#': // Boolean
@@ -141,7 +141,7 @@ func (p *Parser) Write(chunk []byte) (n int, err error) {
 	return
 }
 
-func (p *Parser) GetCode() (code scmgo.SchemeObject, err error) {
+func (p *Parser) GetCode() (code scmgo.Obj, err error) {
 	if p.stack != scmgo.Onil {
 		return nil, ErrParenthesisNotClose
 	}

@@ -17,7 +17,7 @@ var (
 
 var (
 	log                   = logging.MustGetLogger("scmgo")
-	DefaultNames          = make(map[string]SchemeObject)
+	DefaultNames          = make(map[string]Obj)
 	DefaultEnv   *Environ = &Environ{Parent: nil, Names: DefaultNames}
 )
 
@@ -25,7 +25,7 @@ type Formatter interface {
 	Format() (r string)
 }
 
-func ReverseList(head *Cons, tail SchemeObject) (result *Cons, err error) {
+func ReverseList(head *Cons, tail Obj) (result *Cons, err error) {
 	// image a list from left to right.
 	var ok bool
 	left := tail
@@ -42,7 +42,7 @@ func ReverseList(head *Cons, tail SchemeObject) (result *Cons, err error) {
 	return left.(*Cons), nil
 }
 
-func Eval(o SchemeObject, env *Environ, f Frame) (value SchemeObject, next Frame, err error) {
+func Eval(o Obj, env *Environ, f Frame) (value Obj, next Frame, err error) {
 	switch t := o.(type) {
 	case *Symbol:
 		value = env.Get(t.Name)
@@ -52,7 +52,7 @@ func Eval(o SchemeObject, env *Environ, f Frame) (value SchemeObject, next Frame
 	case *Quote:
 		value = t.Objs
 	case *Cons:
-		var procedure SchemeObject
+		var procedure Obj
 		procedure, t, err = t.Pop()
 		if err != nil {
 			return
@@ -81,7 +81,7 @@ func Eval(o SchemeObject, env *Environ, f Frame) (value SchemeObject, next Frame
 	return
 }
 
-func EvalAndReturn(i SchemeObject, e *Environ, f Frame) (next Frame, err error) {
+func EvalAndReturn(i Obj, e *Environ, f Frame) (next Frame, err error) {
 	t, next, err := Eval(i, e, f)
 	if err != nil {
 		log.Error("%s", err)
@@ -100,7 +100,7 @@ func EvalAndReturn(i SchemeObject, e *Environ, f Frame) (next Frame, err error) 
 	return
 }
 
-func Trampoline(f Frame) (result SchemeObject, err error) {
+func Trampoline(f Frame) (result Obj, err error) {
 	for {
 		log.Debug("stack:\n%s", StackFormat(f))
 		f, err = f.Exec()
@@ -115,13 +115,13 @@ func Trampoline(f Frame) (result SchemeObject, err error) {
 	return
 }
 
-func RunCode(code SchemeObject) (result SchemeObject, err error) {
+func RunCode(code Obj) (result Obj, err error) {
 	list, ok := code.(*Cons)
 	if !ok {
 		return nil, ErrType
 	}
 
-	env := &Environ{Parent: DefaultEnv, Names: make(map[string]SchemeObject)}
+	env := &Environ{Parent: DefaultEnv, Names: make(map[string]Obj)}
 	f := CreateBeginFrame(list, env, &EndFrame{Env: DefaultEnv})
 
 	result, err = Trampoline(f)

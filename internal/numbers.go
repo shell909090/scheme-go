@@ -3,7 +3,7 @@ package internal
 import "bitbucket.org/shell909090/scheme-go/scmgo"
 
 func anyFloat(i *scmgo.Cons) (yes bool, err error) {
-	err = i.Iter(func(obj scmgo.SchemeObject) (e error) {
+	err = i.Iter(func(obj scmgo.Obj) (e error) {
 		switch obj.(type) {
 		case scmgo.Float:
 			yes = true
@@ -20,7 +20,7 @@ func anyFloat(i *scmgo.Cons) (yes bool, err error) {
 	return
 }
 
-func ObjToFloat(i scmgo.SchemeObject) (f float64) {
+func ObjToFloat(i scmgo.Obj) (f float64) {
 	switch n := i.(type) {
 	case scmgo.Integer:
 		return float64(int(n))
@@ -30,7 +30,7 @@ func ObjToFloat(i scmgo.SchemeObject) (f float64) {
 	return
 }
 
-func IsNumber(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
+func IsNumber(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, err error) {
 	err = AssertLen(o, 1)
 	if err != nil {
 		return
@@ -43,7 +43,7 @@ func IsNumber(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmg
 	return scmgo.Ofalse, nil, nil
 }
 
-func IsInteger(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
+func IsInteger(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, err error) {
 	err = AssertLen(o, 1)
 	if err != nil {
 		return
@@ -56,7 +56,7 @@ func IsInteger(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scm
 	return scmgo.Ofalse, nil, nil
 }
 
-func Add(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
+func Add(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, err error) {
 	any, err := anyFloat(o)
 	if err != nil {
 		return
@@ -64,7 +64,7 @@ func Add(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Fra
 
 	if any {
 		var s float64
-		err = o.Iter(func(obj scmgo.SchemeObject) (e error) {
+		err = o.Iter(func(obj scmgo.Obj) (e error) {
 			s += ObjToFloat(obj)
 			return
 		}, false)
@@ -74,7 +74,7 @@ func Add(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Fra
 		value = scmgo.Float(s)
 	} else {
 		var s int
-		err = o.Iter(func(obj scmgo.SchemeObject) (e error) {
+		err = o.Iter(func(obj scmgo.Obj) (e error) {
 			s += int(obj.(scmgo.Integer))
 			return
 		}, false)
@@ -86,8 +86,8 @@ func Add(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Fra
 	return
 }
 
-func Dec(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
-	var t scmgo.SchemeObject
+func Dec(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, err error) {
+	var t scmgo.Obj
 	any, err := anyFloat(o)
 	if err != nil {
 		return
@@ -100,7 +100,7 @@ func Dec(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Fra
 		}
 		s := ObjToFloat(t)
 
-		err = o.Iter(func(obj scmgo.SchemeObject) (e error) {
+		err = o.Iter(func(obj scmgo.Obj) (e error) {
 			s -= ObjToFloat(obj)
 			return
 		}, false)
@@ -115,7 +115,7 @@ func Dec(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Fra
 		}
 		s := int(t.(scmgo.Integer))
 
-		err = o.Iter(func(obj scmgo.SchemeObject) (e error) {
+		err = o.Iter(func(obj scmgo.Obj) (e error) {
 			s -= int(obj.(scmgo.Integer))
 			return
 		}, false)
@@ -128,8 +128,8 @@ func Dec(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Fra
 	return
 }
 
-func Mul(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
-	var t scmgo.SchemeObject
+func Mul(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, err error) {
+	var t scmgo.Obj
 	any, err := anyFloat(o)
 	if err != nil {
 		return
@@ -142,7 +142,7 @@ func Mul(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Fra
 		}
 		s := ObjToFloat(t)
 
-		err = o.Iter(func(obj scmgo.SchemeObject) (e error) {
+		err = o.Iter(func(obj scmgo.Obj) (e error) {
 			s *= ObjToFloat(obj)
 			return
 		}, false)
@@ -157,7 +157,7 @@ func Mul(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Fra
 		}
 		s := int(t.(scmgo.Integer))
 
-		err = o.Iter(func(obj scmgo.SchemeObject) (e error) {
+		err = o.Iter(func(obj scmgo.Obj) (e error) {
 			s *= int(obj.(scmgo.Integer))
 			return
 		}, false)
@@ -169,15 +169,15 @@ func Mul(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Fra
 	return
 }
 
-func Div(o *scmgo.Cons, f scmgo.Frame) (value scmgo.SchemeObject, next scmgo.Frame, err error) {
-	var t scmgo.SchemeObject
+func Div(o *scmgo.Cons, f scmgo.Frame) (value scmgo.Obj, next scmgo.Frame, err error) {
+	var t scmgo.Obj
 	t, o, err = o.Pop()
 	if err != nil {
 		return
 	}
 	s := ObjToFloat(t)
 
-	err = o.Iter(func(obj scmgo.SchemeObject) (e error) {
+	err = o.Iter(func(obj scmgo.Obj) (e error) {
 		s /= ObjToFloat(obj)
 		return
 	}, false)

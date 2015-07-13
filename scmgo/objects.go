@@ -1,13 +1,13 @@
 package scmgo
 
-type SchemeObject interface{}
+type Obj interface{}
 
 type Symbol struct {
 	Name string
 }
 
 type Quote struct {
-	Objs SchemeObject
+	Objs Obj
 }
 
 type Boolean bool
@@ -22,13 +22,13 @@ type Float float64
 type String string
 
 type Cons struct {
-	Car SchemeObject
-	Cdr SchemeObject
+	Car Obj
+	Cdr Obj
 }
 
 var Onil = &Cons{}
 
-func (o *Cons) Pop() (r SchemeObject, next *Cons, err error) {
+func (o *Cons) Pop() (r Obj, next *Cons, err error) {
 	if o == Onil {
 		return nil, nil, ErrListOutOfIndex
 	}
@@ -40,7 +40,7 @@ func (o *Cons) Pop() (r SchemeObject, next *Cons, err error) {
 	return
 } // O(1)
 
-func (o *Cons) Push(i SchemeObject) (next *Cons) {
+func (o *Cons) Push(i Obj) (next *Cons) {
 	return &Cons{Car: i, Cdr: o}
 } // O(1)
 
@@ -54,7 +54,7 @@ func (o *Cons) IsImproper() bool {
 	return false
 } // O(n)
 
-func (o *Cons) Iter(f func(obj SchemeObject) (e error), improper bool) (err error) {
+func (o *Cons) Iter(f func(obj Obj) (e error), improper bool) (err error) {
 	ok := true
 	for i := o; i != Onil; {
 		err = f(i.Car)
@@ -73,14 +73,14 @@ func (o *Cons) Iter(f func(obj SchemeObject) (e error), improper bool) (err erro
 } // O(n)
 
 func (o *Cons) Len(improper bool) (n int, err error) {
-	err = o.Iter(func(obj SchemeObject) (e error) {
+	err = o.Iter(func(obj Obj) (e error) {
 		n += 1
 		return
 	}, improper)
 	return
 } // O(n)
 
-func (o *Cons) GetN(n int) (r SchemeObject, err error) {
+func (o *Cons) GetN(n int) (r Obj, err error) {
 	var ok bool
 	c := o
 	for i := 0; i < n; i++ {

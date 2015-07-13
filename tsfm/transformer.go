@@ -6,12 +6,12 @@ type Transformer struct {
 	syntaxes map[string]*Syntax
 }
 
-func (t *Transformer) Parse(obj scmgo.SchemeObject) (err error) {
+func (t *Transformer) Parse(obj scmgo.Obj) (err error) {
 	code, ok := obj.(*scmgo.Cons)
 	if !ok {
 		return scmgo.ErrType
 	}
-	err = code.Iter(func(o scmgo.SchemeObject) (e error) {
+	err = code.Iter(func(o scmgo.Obj) (e error) {
 		s, e := DefineSyntax(o)
 		if e != nil {
 			log.Error("%s", e.Error())
@@ -30,7 +30,7 @@ func (t *Transformer) Parse(obj scmgo.SchemeObject) (err error) {
 	return
 }
 
-func (t *Transformer) Transform(src scmgo.SchemeObject) (code scmgo.SchemeObject, err error) {
+func (t *Transformer) Transform(src scmgo.Obj) (code scmgo.Obj, err error) {
 	code = src
 
 	c, ok := code.(*scmgo.Cons)
@@ -38,7 +38,7 @@ func (t *Transformer) Transform(src scmgo.SchemeObject) (code scmgo.SchemeObject
 		return nil, scmgo.ErrUnknown
 	}
 
-	err = Walker(c, func(o *scmgo.Cons) (result scmgo.SchemeObject, err error) {
+	err = Walker(c, func(o *scmgo.Cons) (result scmgo.Obj, err error) {
 		s, ok := o.Car.(*scmgo.Symbol)
 		if !ok { // not a symbol is not a error.
 			return
@@ -63,10 +63,10 @@ func (t *Transformer) Transform(src scmgo.SchemeObject) (code scmgo.SchemeObject
 	return
 }
 
-func Walker(o *scmgo.Cons, f func(o *scmgo.Cons) (scmgo.SchemeObject, error)) (err error) {
+func Walker(o *scmgo.Cons, f func(o *scmgo.Cons) (scmgo.Obj, error)) (err error) {
 	var ok bool
 	var tmplist *scmgo.Cons
-	var tmp scmgo.SchemeObject
+	var tmp scmgo.Obj
 	for n := o; n != scmgo.Onil; {
 		tmplist, ok = n.Car.(*scmgo.Cons)
 		if ok {

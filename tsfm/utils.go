@@ -44,17 +44,17 @@ func (l Literals) CheckLiteral(s string) (yes bool) {
 }
 
 type MatchResult struct {
-	m map[string]scmgo.SchemeObject
+	m map[string]scmgo.Obj
 }
 
 func CreateMatchResult() (m *MatchResult) {
 	m = &MatchResult{
-		m: make(map[string]scmgo.SchemeObject),
+		m: make(map[string]scmgo.Obj),
 	}
 	return
 }
 
-func (m *MatchResult) Add(name string, value scmgo.SchemeObject) {
+func (m *MatchResult) Add(name string, value scmgo.Obj) {
 	m.m[name] = value
 }
 

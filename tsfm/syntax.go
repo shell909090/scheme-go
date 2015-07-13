@@ -6,8 +6,8 @@ import (
 )
 
 type Rule struct {
-	pattern  scmgo.SchemeObject
-	template scmgo.SchemeObject
+	pattern  scmgo.Obj
+	template scmgo.Obj
 }
 
 func ParseRule(rule *scmgo.Cons) (r *Rule, err error) {
@@ -29,7 +29,7 @@ type Syntax struct {
 	rules    []*Rule
 }
 
-func DefineSyntax(obj scmgo.SchemeObject) (s *Syntax, err error) {
+func DefineSyntax(obj scmgo.Obj) (s *Syntax, err error) {
 	// get define-syntax and check symbol.
 	list, ok := obj.(*scmgo.Cons)
 	if !ok {
@@ -98,7 +98,7 @@ func (s *Syntax) Parse(syntax *scmgo.Cons) (err error) {
 	return
 }
 
-func (s *Syntax) Transform(i scmgo.SchemeObject) (result scmgo.SchemeObject, err error) {
+func (s *Syntax) Transform(i scmgo.Obj) (result scmgo.Obj, err error) {
 	log.Info("transform: %s", scmgo.Format(i))
 	var yes bool
 	for _, rule := range s.rules {

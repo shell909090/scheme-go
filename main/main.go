@@ -62,7 +62,7 @@ func PrepareMacro() {
 	return
 }
 
-func parse(filename string) (code scmgo.SchemeObject, err error) {
+func parse(filename string) (code scmgo.Obj, err error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		log.Error("%s", err)

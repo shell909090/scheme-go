@@ -1,18 +1,18 @@
 package scmgo
 
 type Procedure interface {
-	SchemeObject
+	Obj
 	IsApplicativeOrder() bool
-	Apply(args *Cons, f Frame) (value SchemeObject, next Frame, err error)
+	Apply(args *Cons, f Frame) (value Obj, next Frame, err error)
 }
 
 type InternalProcedure struct {
 	Name        string
-	procedure   func(i *Cons, f Frame) (value SchemeObject, next Frame, err error)
+	procedure   func(i *Cons, f Frame) (value Obj, next Frame, err error)
 	applicative bool
 }
 
-func RegisterInternalProcedure(name string, procedure func(o *Cons, f Frame) (value SchemeObject, next Frame, err error), applicative bool) {
+func RegisterInternalProcedure(name string, procedure func(o *Cons, f Frame) (value Obj, next Frame, err error), applicative bool) {
 	DefaultNames[name] = &InternalProcedure{
 		Name:        name,
 		procedure:   procedure,
@@ -24,7 +24,7 @@ func (p *InternalProcedure) IsApplicativeOrder() bool {
 	return p.applicative
 }
 
-func (p *InternalProcedure) Apply(args *Cons, f Frame) (value SchemeObject, next Frame, err error) {
+func (p *InternalProcedure) Apply(args *Cons, f Frame) (value Obj, next Frame, err error) {
 	log.Info("internal %s", p.Name)
 	// internal procedure has to remember, we now in apply frame, will be abandon next.
 	value, next, err = p.procedure(args, f)
@@ -49,7 +49,7 @@ func (p *LambdaProcedure) IsApplicativeOrder() bool {
 }
 
 func setup_args(env *Environ, p *LambdaProcedure, o *Cons) (err error) {
-	var t SchemeObject
+	var t Obj
 	var s *Symbol
 
 	pn := p.Args // parameters by name
@@ -81,7 +81,7 @@ func setup_args(env *Environ, p *LambdaProcedure, o *Cons) (err error) {
 	return
 }
 
-func (p *LambdaProcedure) Apply(args *Cons, f Frame) (value SchemeObject, next Frame, err error) {
+func (p *LambdaProcedure) Apply(args *Cons, f Frame) (value Obj, next Frame, err error) {
 	env := p.Env.Fork()
 	err = setup_args(env, p, args)
 	if err != nil {

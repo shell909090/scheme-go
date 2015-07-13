@@ -89,7 +89,7 @@ func formatMultiLineList(s io.Writer, list *Cons, iv int) (rv int, err error) {
 	return
 }
 
-func PrettyFormat(s io.Writer, o SchemeObject, iv int) (rv int, err error) {
+func PrettyFormat(s io.Writer, o Obj, iv int) (rv int, err error) {
 	var str string
 
 	c, ok := o.(*Cons)
@@ -116,7 +116,7 @@ func PrettyFormat(s io.Writer, o SchemeObject, iv int) (rv int, err error) {
 	return iv + len(str), err
 }
 
-func Format(o SchemeObject) (r string) {
+func Format(o Obj) (r string) {
 	switch t := o.(type) {
 	case *Symbol:
 		return t.Name

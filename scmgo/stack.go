@@ -3,7 +3,7 @@ package scmgo
 type Frame interface {
 	GetParent() (p Frame)
 	GetEnv() (e *Environ)
-	Return(i SchemeObject) (err error)
+	Return(i Obj) (err error)
 	Exec() (next Frame, err error)
 }
 
@@ -21,7 +21,7 @@ func (f *BaseFrame) GetEnv() (e *Environ) {
 }
 
 type EndFrame struct {
-	result SchemeObject
+	result Obj
 	Env    *Environ
 }
 
@@ -33,7 +33,7 @@ func (f *EndFrame) GetEnv() (e *Environ) {
 	return f.Env
 }
 
-func (f *EndFrame) Return(i SchemeObject) (err error) {
+func (f *EndFrame) Return(i Obj) (err error) {
 	f.result = i
 	return
 }
@@ -51,12 +51,12 @@ func CreateBeginFrame(o *Cons, e *Environ, p Frame) (f Frame) {
 	return &BeginFrame{BaseFrame: BaseFrame{Parent: p, Env: e}, Obj: o}
 }
 
-func (f *BeginFrame) Return(i SchemeObject) (err error) {
+func (f *BeginFrame) Return(i Obj) (err error) {
 	return nil
 }
 
 func (f *BeginFrame) Exec() (next Frame, err error) {
-	var obj SchemeObject
+	var obj Obj
 	switch {
 	case f.Obj == Onil: // FIXME: not make sense
 		return f.Parent, nil
@@ -85,7 +85,7 @@ func CreateApplyFrame(a *Cons, e *Environ, p Frame) (f *ApplyFrame) {
 		Args: a, EvaledArgs: Onil}
 }
 
-func (f *ApplyFrame) Return(i SchemeObject) (err error) {
+func (f *ApplyFrame) Return(i Obj) (err error) {
 	var ok bool
 	if f.procedure != nil {
 		f.EvaledArgs = f.EvaledArgs.Push(i)
@@ -118,7 +118,7 @@ func (f *ApplyFrame) Exec() (next Frame, err error) {
 		return
 	}
 
-	var obj SchemeObject
+	var obj Obj
 	for f.Args != Onil {
 		// pop up next argument
 		obj, f.Args, err = f.Args.Pop()
@@ -148,18 +148,18 @@ func (f *ApplyFrame) Exec() (next Frame, err error) {
 
 type IfFrame struct {
 	BaseFrame
-	Cond  SchemeObject
-	TCase SchemeObject
-	ECase SchemeObject
-	Hit   SchemeObject
+	Cond  Obj
+	TCase Obj
+	ECase Obj
+	Hit   Obj
 }
 
-func CreateIfFrame(cond, tcase, ecase SchemeObject, e *Environ, p Frame) (f Frame) {
+func CreateIfFrame(cond, tcase, ecase Obj, e *Environ, p Frame) (f Frame) {
 	return &IfFrame{BaseFrame: BaseFrame{Parent: p, Env: e},
 		Cond: cond, TCase: tcase, ECase: ecase}
 }
 
-func (f *IfFrame) Return(i SchemeObject) (err error) {
+func (f *IfFrame) Return(i Obj) (err error) {
 	b, ok := i.(Boolean)
 	if !ok {
 		return ErrType
