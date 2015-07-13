@@ -1,7 +1,7 @@
 package tsfm
 
 import (
-	"bitbucket.org/shell909090/scheme-go/internal"
+	"bitbucket.org/shell909090/scheme-go/impl"
 	"bitbucket.org/shell909090/scheme-go/scm"
 )
 
@@ -12,7 +12,7 @@ type Rule struct {
 
 func ParseRule(rule *scm.Cons) (r *Rule, err error) {
 	var pattern, template *scm.Cons
-	rule, err = internal.ParseParameters(rule, &pattern, &template)
+	rule, err = impl.ParseParameters(rule, &pattern, &template)
 	if err != nil {
 		log.Error("%s", err.Error())
 		return
@@ -36,7 +36,7 @@ func DefineSyntax(obj scm.Obj) (s *Syntax, err error) {
 		return nil, scm.ErrType
 	}
 	var define, keyword string
-	list, err = internal.ParseParameters(list, &define, &keyword)
+	list, err = impl.ParseParameters(list, &define, &keyword)
 	if err != nil { // is it ok if obj is totally not a define-syntax?
 		err = nil // even not a list, or first two elements not symbols.
 		return
@@ -65,7 +65,7 @@ func (s *Syntax) Parse(syntax *scm.Cons) (err error) {
 	// get syntax-rules and check symbol, and get literals.
 	var syntax_rules string
 	var literals *scm.Cons
-	syntax, err = internal.ParseParameters(syntax, &syntax_rules, &literals)
+	syntax, err = impl.ParseParameters(syntax, &syntax_rules, &literals)
 	if err != nil {
 		log.Error("%s", err.Error())
 		return

@@ -7,7 +7,7 @@ import (
 
 	"bytes"
 
-	_ "bitbucket.org/shell909090/scheme-go/internal"
+	_ "bitbucket.org/shell909090/scheme-go/impl"
 	"bitbucket.org/shell909090/scheme-go/parser"
 	"bitbucket.org/shell909090/scheme-go/scm"
 	"bitbucket.org/shell909090/scheme-go/tsfm"

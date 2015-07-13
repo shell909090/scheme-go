@@ -1,4 +1,4 @@
-package internal
+package impl
 
 import (
 	"errors"
@@ -12,7 +12,7 @@ var (
 )
 
 var (
-	log = logging.MustGetLogger("internal")
+	log = logging.MustGetLogger("impl")
 )
 
 func AssertLen(o *scm.Cons, length int) (err error) {

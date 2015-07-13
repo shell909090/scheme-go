@@ -1,4 +1,4 @@
-package internal
+package impl
 
 import "bitbucket.org/shell909090/scheme-go/scm"
 

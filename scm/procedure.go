@@ -24,8 +24,8 @@ func (p *InternalProcedure) IsApplicativeOrder() bool {
 }
 
 func (p *InternalProcedure) Apply(args *Cons, f Frame) (value Obj, next Frame, err error) {
-	log.Info("internal %s", p.Name)
-	// internal procedure has to remember, we now in apply frame, will be abandon next.
+	log.Info("impl %s", p.Name)
+	// impl procedure has to remember, we now in apply frame, will be abandon next.
 	value, next, err = p.procedure(args, f)
 	switch {
 	case next != nil:
