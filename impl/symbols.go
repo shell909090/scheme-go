@@ -6,6 +6,35 @@ import (
 	"bitbucket.org/shell909090/scheme-go/scm"
 )
 
+func IsSymbol(o *scm.Cons, f scm.Frame) (value scm.Obj, next scm.Frame, err error) {
+	err = AssertLen(o, 1)
+	if err != nil {
+		return
+	}
+
+	_, _, err = o.PopSymbol()
+	if err == scm.ErrType {
+		return scm.Ofalse, nil, nil
+	}
+	return scm.Otrue, nil, nil
+}
+
+func IsString(o *scm.Cons, f scm.Frame) (value scm.Obj, next scm.Frame, err error) {
+	err = AssertLen(o, 1)
+	if err != nil {
+		return
+	}
+
+	t, _, err := o.Pop()
+	if err != nil {
+		return
+	}
+	if _, ok := t.(scm.String); !ok {
+		return scm.Ofalse, nil, nil
+	}
+	return scm.Otrue, nil, nil
+}
+
 func Define(o *scm.Cons, f scm.Frame) (value scm.Obj, next scm.Frame, err error) {
 	args, o, err := o.PopCons()
 	if err != nil {
@@ -43,6 +72,36 @@ func Lambda(o *scm.Cons, f scm.Frame) (value scm.Obj, next scm.Frame, err error)
 		Obj:  o,
 	}
 	return
+}
+
+func Begin(o *scm.Cons, f scm.Frame) (value scm.Obj, next scm.Frame, err error) {
+	return nil, scm.CreateBeginFrame(o, f.GetEnv(), f.GetParent()), nil
+}
+
+func Eval(o *scm.Cons, f scm.Frame) (value scm.Obj, next scm.Frame, err error) {
+	err = AssertLen(o, 1)
+	if err != nil {
+		return
+	}
+
+	a, o, err := o.Pop()
+	if err != nil {
+		return
+	}
+	next, err = scm.EvalAndReturn(a, f.GetEnv(), f.GetParent())
+	return
+}
+
+func Apply(o *scm.Cons, f scm.Frame) (value scm.Obj, next scm.Frame, err error) {
+	p, args, err := o.Pop()
+	if err != nil {
+		return
+	}
+	procedure, ok := p.(scm.Procedure)
+	if !ok {
+		return nil, nil, scm.ErrNotRunnable
+	}
+	return procedure.Apply(args, f) // apply will realized this is an Apply frame.
 }
 
 func If(o *scm.Cons, f scm.Frame) (value scm.Obj, next scm.Frame, err error) {
@@ -84,21 +143,21 @@ func Newline(o *scm.Cons, f scm.Frame) (value scm.Obj, next scm.Frame, err error
 }
 
 func init() {
-	// symbol? string?
+	scm.RegisterInternalProcedure("symbol?", IsSymbol, true)
+	scm.RegisterInternalProcedure("string?", IsString, true)
 
 	scm.RegisterInternalProcedure("define", Define, false)
 	scm.RegisterInternalProcedure("lambda", Lambda, false)
 	// begin compile
-	// eval apply
+	scm.RegisterInternalProcedure("begin", Begin, false)
+	scm.RegisterInternalProcedure("eval", Eval, true)
+	scm.RegisterInternalProcedure("apply", Apply, true)
 
 	// user-init-environment
 	// current-environment
 	// import
 
-	// let let*
 	// eq? equal?
-	// not and or
-	// cond if when
 	scm.RegisterInternalProcedure("if", If, false)
 
 	scm.RegisterInternalProcedure("display", Display, true)

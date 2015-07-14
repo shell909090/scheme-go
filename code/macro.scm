@@ -1,12 +1,4 @@
-(define-syntax cond
-  (syntax-rules (else)
-    ((_ (rule1 value1))
-     (if rule1 value1))
-    ((_ (rule1 value1) (else value2) body ...)
-     (if rule1 value1 value2))
-    ((_ (rule1 value1) body ...)
-     (if rule1 value1 (cond body ...)))))
-
+; let let*
 (define-syntax let
   (syntax-rules ()
     ((_ ((name1 value1)) body ...)
@@ -15,6 +7,14 @@
      (let (others ...)
        ((lambda (name1) body ...) value1))))))
 
+(define-syntax cond
+  (syntax-rules (else)
+    ((_ (rule1 value1))
+     (if rule1 value1))
+    ((_ (rule1 value1) (else value2) body ...)
+     (if rule1 value1 value2))
+    ((_ (rule1 value1) body ...)
+     (if rule1 value1 (cond body ...)))))
 (define-syntax when
   (syntax-rules ()
     ((_ test body ...)

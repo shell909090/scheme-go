@@ -73,14 +73,23 @@ func IsNull(o *scm.Cons, f scm.Frame) (value scm.Obj, next scm.Frame, err error)
 	return scm.Ofalse, nil, nil
 }
 
+func IsPair(o *scm.Cons, f scm.Frame) (value scm.Obj, next scm.Frame, err error) {
+	err = AssertLen(o, 1)
+	if err != nil {
+		return
+	}
+
+	if _, ok := o.Car.(*scm.Cons); ok {
+		return scm.Otrue, nil, nil
+	}
+	return scm.Ofalse, nil, nil
+}
+
 func init() {
 	scm.RegisterInternalProcedure("list", List, true)
 	scm.RegisterInternalProcedure("cons", MakeCons, true)
-	// null? pair?
 	scm.RegisterInternalProcedure("null?", IsNull, true)
-	// car cdr
+	scm.RegisterInternalProcedure("pair?", IsPair, true)
 	scm.RegisterInternalProcedure("car", Car, true)
 	scm.RegisterInternalProcedure("cdr", Cdr, true)
-	// append
-	// map filter reduce
 }
