@@ -1,8 +1,8 @@
 package main
 
 import (
-	"bitbucket.org/shell909090/scheme-go/impl"
-	"bitbucket.org/shell909090/scheme-go/scm"
+	"github.com/shell909090/scheme-go/impl"
+	"github.com/shell909090/scheme-go/scm"
 )
 
 type Rule struct {

@@ -1,6 +1,6 @@
 package main
 
-import "bitbucket.org/shell909090/scheme-go/scm"
+import "github.com/shell909090/scheme-go/scm"
 
 type Transformer struct {
 	syntaxes map[string]*Syntax

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"io"
 
-	"bitbucket.org/shell909090/scheme-go/scm"
 	logging "github.com/op/go-logging"
+	"github.com/shell909090/scheme-go/scm"
 )
 
 var (

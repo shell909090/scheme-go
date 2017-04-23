@@ -1,6 +1,6 @@
 package impl
 
-import "bitbucket.org/shell909090/scheme-go/scm"
+import "github.com/shell909090/scheme-go/scm"
 
 func anyFloat(i *scm.Cons) (yes bool, err error) {
 	err = i.Iter(func(obj scm.Obj) (e error) {

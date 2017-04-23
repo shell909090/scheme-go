@@ -8,10 +8,10 @@
 all: build
 
 build:
-	go build -o bin/tsfm bitbucket.org/shell909090/scheme-go/tsfm
+	go build -o bin/tsfm github.com/shell909090/scheme-go/tsfm
 	bin/tsfm -base code/macro.scm code/transformer.scm
 # mkdir -p bin
-# go build -o bin/scheme-go bitbucket.org/shell909090/scheme-go/main
+# go build -o bin/scheme-go github.com/shell909090/scheme-go/main
 
 clean:
 	rm -rf bin

@@ -1,6 +1,6 @@
 package main
 
-import "bitbucket.org/shell909090/scheme-go/scm"
+import "github.com/shell909090/scheme-go/scm"
 
 func RenderList(mr *MatchResult, template *scm.Cons) (result scm.Obj, err error) {
 	var ok bool

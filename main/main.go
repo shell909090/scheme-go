@@ -5,10 +5,10 @@ import (
 	stdlog "log"
 	"os"
 
-	_ "bitbucket.org/shell909090/scheme-go/impl"
-	"bitbucket.org/shell909090/scheme-go/parser"
-	"bitbucket.org/shell909090/scheme-go/scm"
-	// "bitbucket.org/shell909090/scheme-go/tsfm"
+	_ "github.com/shell909090/scheme-go/impl"
+	"github.com/shell909090/scheme-go/parser"
+	"github.com/shell909090/scheme-go/scm"
+	// "github.com/shell909090/scheme-go/tsfm"
 	logging "github.com/op/go-logging"
 )
 

@@ -1,6 +1,6 @@
 package main
 
-import "bitbucket.org/shell909090/scheme-go/scm"
+import "github.com/shell909090/scheme-go/scm"
 
 func MatchList(plist, olist *scm.Cons, literals Literals, mr *MatchResult) (yes bool, err error) {
 	for plist != scm.Onil && olist != scm.Onil {

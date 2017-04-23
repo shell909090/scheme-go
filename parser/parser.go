@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"bitbucket.org/shell909090/scheme-go/scm"
+	"github.com/shell909090/scheme-go/scm"
 )
 
 func StringToBoolean(b []byte) (o scm.Boolean, err error) {

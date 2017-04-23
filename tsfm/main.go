@@ -5,10 +5,9 @@ import (
 	stdlog "log"
 	"os"
 
-	"bitbucket.org/shell909090/scheme-go/parser"
-	"bitbucket.org/shell909090/scheme-go/scm"
-
-	"github.com/op/go-logging"
+	logging "github.com/op/go-logging"
+	"github.com/shell909090/scheme-go/parser"
+	"github.com/shell909090/scheme-go/scm"
 )
 
 var (

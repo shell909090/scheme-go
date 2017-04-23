@@ -3,7 +3,7 @@ package impl
 import (
 	"fmt"
 
-	"bitbucket.org/shell909090/scheme-go/scm"
+	"github.com/shell909090/scheme-go/scm"
 )
 
 func IsSymbol(o *scm.Cons, f scm.Frame) (value scm.Obj, next scm.Frame, err error) {
